@@ -296,12 +296,12 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
 function AppliedTab() {
   const { data, isLoading } = useMyApplications()
   const refreshAll = useRefreshAll()
+  const [cancellingId, setCancellingId] = useState<number | null>(null)
   if (isLoading) return <Loading />
   const apps = data?.content ?? []
   if (apps.length === 0) {
     return <Empty title="No pitches sent yet" body="Find a gig nearby and send your first pitch." cta="Explore gigs" to="/explore" />
   }
-  const [cancellingId, setCancellingId] = useState<number | null>(null)
 
   async function cancel(appId: number) {
     if (!window.confirm('Cancel your application for this gig?')) return
