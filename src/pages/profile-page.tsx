@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Camera, LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SkillTag, VerifiedBadge } from '@/components/badges'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -9,7 +9,9 @@ import { Stars } from '@/components/rating'
 import { RequireAuth } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
 import { useUserReviews } from '@/hooks/use-api'
-import { useAuth } from '@/lib/auth'
+import { useSWRConfig } from 'swr'
+import { useAuth, ME_KEY } from '@/lib/auth'
+import { tokenStorage } from '@/services/token'
 import { timeAgo } from '@/lib/format'
 import type { UserDTO } from '@/types'
 
@@ -26,14 +28,46 @@ export function ProfilePage() {
 
 function ProfileContent() {
   const { user, signOut } = useAuth()
+  const { mutate } = useSWRConfig()
   const [editing, setEditing] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const saved = localStorage.getItem(`profileAvatar:${user?.id}`)
+    if (saved && user && user.avatarUrl !== saved) {
+      void mutate([ME_KEY, tokenStorage.get()], (u: any) => (u ? { ...u, avatarUrl: saved } : u), { revalidate: false })
+    }
+  }, [user?.id])
   if (!user) return null
+
+  function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = String(reader.result)
+      localStorage.setItem(`profileAvatar:${user!.id}`, dataUrl)
+      void mutate([ME_KEY, tokenStorage.get()], (u: any) => (u ? { ...u, avatarUrl: dataUrl } : u), { revalidate: false })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
       <section className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 text-center">
-        <UserAvatar user={user} className="size-24 text-3xl" />
+        <div className="relative">
+          <UserAvatar user={user} className="size-24 text-3xl" />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow"
+            aria-label="Change profile picture"
+          >
+            <Camera className="size-3.5" aria-hidden="true" />
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
+        </div>
         <div className="flex flex-col items-center gap-1">
           <h2 className="text-xl font-extrabold">{user.fullName}</h2>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
