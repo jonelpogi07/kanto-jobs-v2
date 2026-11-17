@@ -100,6 +100,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, expanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
+  const visibleApps = (applications ?? []).filter((a) => a.status !== 'REJECTED')
   const panelId = `applicants-${job.id}`
   const refreshAll = useRefreshAll()
   const canCancel = job.status === 'OPEN' || job.status === 'IN_PROGRESS'
@@ -164,7 +165,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
             </p>
           ) : (
             <>
-              {(accepted ? [accepted, ...applications.filter((a) => a !== accepted)] : applications).map((app) => (
+              {(accepted ? [accepted, ...visibleApps.filter((a) => a !== accepted)] : visibleApps).map((app) => (
                 <ApplicantRow key={app.id} app={app} job={job} />
               ))}
               {job.status === 'IN_PROGRESS' && accepted ? (
