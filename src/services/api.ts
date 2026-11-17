@@ -4,6 +4,8 @@ import type {
   ApiErrorDTO,
   ApplicationDTO,
   AuthResponse,
+  ChatMessageDTO,
+  ChatThreadDTO,
   JobPostDTO,
   Page,
   ReviewDTO,
@@ -62,6 +64,7 @@ const springBootApi: KantoApi = {
     create: (req) => data(http.post<JobPostDTO>('/jobs', req)),
     mine: (page = 0, size = 20) => data(http.get<Page<JobPostDTO>>('/jobs/mine', { params: { page, size } })),
     complete: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/complete`)),
+    cancel: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/cancel`)),
     applications: (jobId) => data(http.get<ApplicationDTO[]>(`/jobs/${jobId}/applications`)),
     apply: (jobId, req) => data(http.post<ApplicationDTO>(`/jobs/${jobId}/applications`, req)),
     review: (jobId, req) => data(http.post<ReviewDTO>(`/jobs/${jobId}/reviews`, req)),
@@ -70,6 +73,13 @@ const springBootApi: KantoApi = {
     mine: (page = 0, size = 20) =>
       data(http.get<Page<ApplicationDTO>>('/applications/mine', { params: { page, size } })),
     accept: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/accept`)),
+    decline: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/decline`)),
+  },
+  chat: {
+    threads: () => data(http.get<ChatThreadDTO[]>('/chat/threads')),
+    messages: (threadId, afterId) =>
+      data(http.get<ChatMessageDTO[]>(`/chat/threads/${threadId}/messages`, { params: { afterId } })),
+    send: (threadId, req) => data(http.post<ChatMessageDTO>(`/chat/threads/${threadId}/messages`, req)),
   },
 }
 

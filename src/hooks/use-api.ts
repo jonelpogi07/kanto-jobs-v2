@@ -34,6 +34,21 @@ export function useUserReviews(userId: number | undefined) {
   return useSWR(userId ? ['/users/:id/reviews', userId] : null, () => api.users.reviews(userId!))
 }
 
+export const CHAT_THREADS_KEY = '/chat/threads'
+
+/** Inbox list. Polls so new messages and unread counts stay live. */
+export function useChatThreads() {
+  const { isAuthenticated } = useAuth()
+  return useSWR(isAuthenticated ? CHAT_THREADS_KEY : null, () => api.chat.threads(), { refreshInterval: 5_000 })
+}
+
+/** Conversation messages. Polls for live updates; the API marks the thread read. */
+export function useChatMessages(threadId: number | null) {
+  return useSWR(threadId ? ['/chat/threads/:id/messages', threadId] : null, () => api.chat.messages(threadId!), {
+    refreshInterval: 3_000,
+  })
+}
+
 /** Revalidates every cached query after a write. Small app, so a broad refresh keeps things simple. */
 export function useRefreshAll() {
   const { mutate } = useSWRConfig()

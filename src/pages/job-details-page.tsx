@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock, Hourglass, Landmark, Loader2, MapPin, Send, Users } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  Landmark,
+  Loader2,
+  MapPin,
+  MessageCircle,
+  Send,
+  Users,
+} from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
 import { ApplicationStatusBadge, JobStatusBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
@@ -135,6 +147,13 @@ export function JobDetailsPage() {
             {myApplication.status === 'ACCEPTED' && myApplication.posterContact ? (
               <ContactBar contact={myApplication.posterContact} name={job.poster.fullName} />
             ) : null}
+            <Link
+              to={`/messages/${myApplication.id}`}
+              className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}
+            >
+              <MessageCircle aria-hidden="true" />
+              {`Message ${job.poster.fullName.split(' ')[0]}`}
+            </Link>
           </section>
         ) : null}
       </article>

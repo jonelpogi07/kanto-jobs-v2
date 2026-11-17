@@ -115,6 +115,22 @@ export function initials(name: string) {
     .join('')
 }
 
+const clockFormat = new Intl.DateTimeFormat('en-PH', { hour: 'numeric', minute: '2-digit' })
+
+export const formatClock = (iso: string) => clockFormat.format(new Date(iso))
+
+const dayFormat = new Intl.DateTimeFormat('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })
+
+export function formatDayLabel(iso: string) {
+  const date = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return dayFormat.format(date)
+}
+
 /** Normalizes PH mobile numbers to +63 E.164 for tel:/sms:/viber: links. */
 export function toE164(phone: string) {
   const digits = phone.replace(/\D/g, '')

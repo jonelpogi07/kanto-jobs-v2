@@ -95,6 +95,34 @@ export interface ApplicationDTO {
   createdAt: string
 }
 
+/**
+ * A 1:1 live chat between the client (job poster) and a jobseeker
+ * (applicant). One thread per application, so `id === applicationId`.
+ */
+export interface ChatThreadDTO {
+  id: number
+  jobId: number
+  jobTitle: string
+  jobStatus: JobStatus
+  applicationId: number
+  applicationStatus: ApplicationStatus
+  otherUser: UserSummaryDTO
+  lastMessage: string | null
+  lastMessageAt: string | null
+  unreadCount: number
+  updatedAt: string
+}
+
+export interface ChatMessageDTO {
+  id: number
+  threadId: number
+  senderId: number
+  body: string
+  createdAt: string
+  /** ISO timestamp when the recipient read the message, or null if unread. */
+  readAt: string | null
+}
+
 export interface ReviewDTO {
   id: number
   jobId: number
@@ -181,6 +209,10 @@ export interface CreateApplicationRequest {
 export interface CreateReviewRequest {
   rating: number
   comment: string
+}
+
+export interface SendMessageRequest {
+  body: string
 }
 
 export interface JobSearchParams {

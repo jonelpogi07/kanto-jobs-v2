@@ -1,6 +1,8 @@
 import type {
   ApplicationDTO,
   AuthResponse,
+  ChatMessageDTO,
+  ChatThreadDTO,
   CreateApplicationRequest,
   CreateJobPostRequest,
   CreateReviewRequest,
@@ -10,6 +12,7 @@ import type {
   Page,
   RegisterRequest,
   ReviewDTO,
+  SendMessageRequest,
   UpdateUserRequest,
   UserDTO,
 } from '@/types'
@@ -55,11 +58,23 @@ export interface KantoApi {
     apply(jobId: number, req: CreateApplicationRequest): Promise<ApplicationDTO>
     /** POST /jobs/{id}/reviews */
     review(jobId: number, req: CreateReviewRequest): Promise<ReviewDTO>
+    /** POST /jobs/{id}/cancel */
+    cancel(id: number): Promise<JobPostDTO>
   }
   applications: {
     /** GET /applications/mine */
     mine(page?: number, size?: number): Promise<Page<ApplicationDTO>>
     /** POST /applications/{id}/accept */
     accept(id: number): Promise<ApplicationDTO>
+    /** POST /applications/{id}/decline */
+    decline(id: number): Promise<ApplicationDTO>
+  }
+  chat: {
+    /** GET /chat/threads — conversations the caller is part of. */
+    threads(): Promise<ChatThreadDTO[]>
+    /** GET /chat/threads/{id}/messages?afterId= — also marks the thread as read. */
+    messages(threadId: number, afterId?: number): Promise<ChatMessageDTO[]>
+    /** POST /chat/threads/{id}/messages */
+    send(threadId: number, req: SendMessageRequest): Promise<ChatMessageDTO>
   }
 }

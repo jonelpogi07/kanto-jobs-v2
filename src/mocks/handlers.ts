@@ -4,6 +4,8 @@ import type {
   ApplicantDTO,
   ApplicationDTO,
   AuthResponse,
+  ChatMessageDTO,
+  ChatThreadDTO,
   JobPostDTO,
   Page,
   ReviewDTO,
@@ -14,9 +16,11 @@ import {
   LOCATIONS,
   SEED_APPLICATIONS,
   SEED_JOBS,
+  SEED_MESSAGES,
   SEED_REVIEWS,
   SEED_USERS,
   type SeedApplication,
+  type SeedMessage,
   type SeedReview,
   type SeedUser,
 } from './data'
@@ -31,9 +35,10 @@ interface MockDb {
   jobs: JobRecord[]
   applications: SeedApplication[]
   reviews: SeedReview[]
+  messages: SeedMessage[]
 }
 
-const DB_KEY = 'kanto-jobs:mock-db:v1'
+const DB_KEY = 'kanto-jobs:mock-db:v2'
 
 function seed(): MockDb {
   return {
@@ -51,6 +56,7 @@ function seed(): MockDb {
     }),
     applications: structuredClone(SEED_APPLICATIONS),
     reviews: structuredClone(SEED_REVIEWS),
+    messages: structuredClone(SEED_MESSAGES),
   }
 }
 
@@ -185,6 +191,57 @@ function toReviewDTO(review: SeedReview): ReviewDTO {
     rating: review.rating,
     comment: review.comment,
     createdAt: review.createdAt,
+  }
+}
+
+function findApplication(id: number): SeedApplication {
+  const app = db.applications.find((a) => a.id === id)
+  if (!app) throw new ApiError(404, 'Conversation not found.')
+  return app
+}
+
+function assertChatParticipant(app: SeedApplication, userId: number) {
+  const job = findJob(app.jobId)
+  if (app.applicantId !== userId && job.posterId !== userId) {
+    throw new ApiError(403, 'You are not part of this conversation.')
+  }
+}
+
+function messagesFor(applicationId: number): SeedMessage[] {
+  return db.messages
+    .filter((m) => m.applicationId === applicationId)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+}
+
+function toChatMessageDTO(message: SeedMessage): ChatMessageDTO {
+  return {
+    id: message.id,
+    threadId: message.applicationId,
+    senderId: message.senderId,
+    body: message.body,
+    createdAt: message.createdAt,
+    readAt: message.readAt,
+  }
+}
+
+function toChatThread(app: SeedApplication, viewerId: number): ChatThreadDTO {
+  const job = findJob(app.jobId)
+  const otherId = app.applicantId === viewerId ? job.posterId : app.applicantId
+  const messages = messagesFor(app.id)
+  const last = messages[messages.length - 1] ?? null
+  const activity = last?.createdAt ?? app.createdAt
+  return {
+    id: app.id,
+    jobId: job.id,
+    jobTitle: job.title,
+    jobStatus: job.status,
+    applicationId: app.id,
+    applicationStatus: app.status,
+    otherUser: toSummary(findUser(otherId)),
+    lastMessage: last?.body ?? null,
+    lastMessageAt: last?.createdAt ?? null,
+    unreadCount: messages.filter((m) => m.senderId !== viewerId && m.readAt == null).length,
+    updatedAt: activity,
   }
 }
 
@@ -354,6 +411,23 @@ export const mockApi: KantoApi = {
       save()
       return toJobDTO(job)
     },
+    async cancel(id) {
+      await delay()
+      const userId = currentUserId()
+      const job = findJob(id)
+      if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can cancel this job.')
+      if (job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+        throw new ApiError(409, 'This job is already finished.')
+      }
+      job.status = 'CANCELLED'
+      job.updatedAt = now()
+      // Reject all pending applications
+      for (const app of db.applications) {
+        if (app.jobId === id && app.status === 'PENDING') app.status = 'REJECTED'
+      }
+      save()
+      return toJobDTO(job)
+    },
     async applications(jobId) {
       await delay(150)
       const userId = currentUserId()
@@ -442,6 +516,65 @@ export const mockApi: KantoApi = {
       job.updatedAt = now()
       save()
       return toApplicationDTO(app, userId, false)
+    },
+    async decline(id) {
+      await delay()
+      const userId = currentUserId()
+      const app = db.applications.find((a) => a.id === id)
+      if (!app) throw new ApiError(404, 'Application not found.')
+      const job = findJob(app.jobId)
+      if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can decline applicants.')
+      if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be declined.')
+      app.status = 'REJECTED'
+      save()
+      return toApplicationDTO(app, userId, false)
+    },
+  },
+
+  chat: {
+    async threads() {
+      await delay(120)
+      const userId = currentUserId()
+      return db.applications
+        .filter((a) => a.status !== 'WITHDRAWN')
+        .filter((a) => a.applicantId === userId || findJob(a.jobId).posterId === userId)
+        .map((a) => toChatThread(a, userId))
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    },
+    async messages(threadId, afterId) {
+      await delay(120)
+      const userId = currentUserId()
+      const app = findApplication(threadId)
+      assertChatParticipant(app, userId)
+      for (const message of db.messages) {
+        if (message.applicationId === threadId && message.senderId !== userId && message.readAt == null) {
+          message.readAt = now()
+        }
+      }
+      save()
+      return messagesFor(threadId)
+        .filter((m) => afterId == null || m.id > afterId)
+        .map(toChatMessageDTO)
+    },
+    async send(threadId, { body }) {
+      await delay()
+      const userId = currentUserId()
+      const app = findApplication(threadId)
+      assertChatParticipant(app, userId)
+      const text = body.trim()
+      if (!text) throw new ApiError(400, 'Message cannot be empty.')
+      if (text.length > 2000) throw new ApiError(400, 'Message is too long.')
+      const message: SeedMessage = {
+        id: nextId(db.messages),
+        applicationId: threadId,
+        senderId: userId,
+        body: text,
+        createdAt: now(),
+        readAt: null,
+      }
+      db.messages.push(message)
+      save()
+      return toChatMessageDTO(message)
     },
   },
 }

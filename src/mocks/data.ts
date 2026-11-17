@@ -500,6 +500,100 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   },
 ]
 
+export interface SeedMessage {
+  id: number
+  /** Chat thread id, which is the application id (one conversation per application). */
+  applicationId: number
+  senderId: number
+  body: string
+  createdAt: string
+  /** Null while the recipient has not opened the thread yet. */
+  readAt: string | null
+}
+
+export const SEED_MESSAGES: SeedMessage[] = [
+  {
+    id: 7001,
+    applicationId: 1003,
+    senderId: 3,
+    body: 'Magandang umaga po! Kailan po kayo available para sa ceiling fan?',
+    createdAt: hoursAgo(20),
+    readAt: hoursAgo(19.9),
+  },
+  {
+    id: 7002,
+    applicationId: 1003,
+    senderId: 1,
+    body: 'Good morning Ramon! Pwede po ako mamayang 2 PM. Dalawa lang po ang outlet?',
+    createdAt: hoursAgo(19),
+    readAt: hoursAgo(18.9),
+  },
+  {
+    id: 7003,
+    applicationId: 1003,
+    senderId: 3,
+    body: 'Opo, dalawa po. Salamat! Kita-kita na lang po tayo mamaya.',
+    createdAt: hoursAgo(18.5),
+    readAt: null,
+  },
+  {
+    id: 7004,
+    applicationId: 1006,
+    senderId: 3,
+    body: 'Salamat sa pitch, Juan. Kaya mo bang tapusin ngayong gabi?',
+    createdAt: hoursAgo(25),
+    readAt: hoursAgo(24.9),
+  },
+  {
+    id: 7005,
+    applicationId: 1006,
+    senderId: 1,
+    body: 'Opo, mga 8 PM onwards po ako available.',
+    createdAt: hoursAgo(24.5),
+    readAt: hoursAgo(24.4),
+  },
+  {
+    id: 7006,
+    applicationId: 1006,
+    senderId: 3,
+    body: 'Sige, kita-kita tayo mamaya. Ako na bahala sa Excel file.',
+    createdAt: hoursAgo(24),
+    readAt: hoursAgo(23.9),
+  },
+  {
+    id: 7007,
+    applicationId: 1005,
+    senderId: 6,
+    body: 'Hi Juan, available ka po ba bukas ng umaga?',
+    createdAt: hoursAgo(1.4),
+    readAt: null,
+  },
+  {
+    id: 7008,
+    applicationId: 1005,
+    senderId: 1,
+    body: "Opo Ma'am, wala akong pasok bukas. Anong oras po?",
+    createdAt: hoursAgo(1.2),
+    readAt: hoursAgo(1.1),
+  },
+  {
+    id: 7009,
+    applicationId: 1001,
+    senderId: 5,
+    body: 'Available po ako ngayon. May sariling motor at helmet po ako.',
+    createdAt: hoursAgo(0.55),
+    readAt: null,
+  },
+  {
+    id: 7010,
+    applicationId: 1002,
+    senderId: 7,
+    body: 'Taga-Bamban lang po ako, 10 mins away. May insulated bag din po ako.',
+    createdAt: hoursAgo(0.25),
+    readAt: null,
+  },
+]
+
 export interface SeedReview {
   id: number
   jobId: number

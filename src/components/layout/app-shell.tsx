@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from 'react-router'
-import { Briefcase, Compass, PlusCircle, UserRound } from 'lucide-react'
+import { Briefcase, Compass, MessageCircle, PlusCircle, UserRound } from 'lucide-react'
+import { useChatThreads } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/explore', label: 'Explore', icon: Compass },
   { to: '/post-job', label: 'Post Gig', icon: PlusCircle },
   { to: '/my-gigs', label: 'My Gigs', icon: Briefcase },
+  { to: '/messages', label: 'Inbox', icon: MessageCircle },
   { to: '/profile', label: 'Profile', icon: UserRound },
 ]
 
@@ -23,12 +25,15 @@ export function AppShell() {
 }
 
 function BottomNav() {
+  const { data: threads } = useChatThreads()
+  const unread = threads?.reduce((total, thread) => total + thread.unreadCount, 0) ?? 0
+
   return (
     <nav
       aria-label="Primary"
       className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur sm:absolute"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-5">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
           <li key={to}>
             <NavLink
@@ -44,11 +49,16 @@ function BottomNav() {
                 <>
                   <span
                     className={cn(
-                      'flex h-7 w-12 items-center justify-center rounded-full transition-colors',
+                      'relative flex h-7 w-12 items-center justify-center rounded-full transition-colors',
                       isActive && 'bg-primary-soft',
                     )}
                   >
                     <Icon className="size-5" aria-hidden="true" strokeWidth={isActive ? 2.4 : 2} />
+                    {to === '/messages' && unread > 0 ? (
+                      <span className="absolute -top-1.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground ring-2 ring-card">
+                        {unread > 9 ? '9+' : unread}
+                      </span>
+                    ) : null}
                   </span>
                   {label}
                 </>

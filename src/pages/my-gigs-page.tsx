@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { CheckCircle2, ChevronDown, Inbox, Loader2, MapPin, Star, UserCheck } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Inbox, Loader2, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApplicationStatusBadge, JobStatusBadge, SkillTag, VerifiedBadge } from '@/components/badges'
@@ -97,9 +97,25 @@ function PostedTab() {
 function PostedJobCard({ job }: { job: JobPostDTO }) {
   const [expanded, setExpanded] = useState(job.status === 'IN_PROGRESS')
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, expanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
   const panelId = `applicants-${job.id}`
+  const refreshAll = useRefreshAll()
+  const canCancel = job.status === 'OPEN' || job.status === 'IN_PROGRESS'
+
+  async function cancel() {
+    setCancelling(true)
+    try {
+      await api.jobs.cancel(job.id)
+      toast.success('Gig cancelled', { description: 'All applicants have been notified.' })
+      await refreshAll()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not cancel gig.')
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -158,6 +174,17 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
               ) : null}
             </>
           )}
+          {canCancel && (
+            <Button
+              variant="destructive"
+              className="h-10 mt-2"
+              onClick={cancel}
+              disabled={cancelling}
+            >
+              {cancelling ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+              Cancel Gig
+            </Button>
+          )}
         </div>
       ) : null}
 
@@ -171,6 +198,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
 function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const refreshAll = useRefreshAll()
   const [accepting, setAccepting] = useState(false)
+  const [declining, setDeclining] = useState(false)
   const isAccepted = app.status === 'ACCEPTED'
   const dimmed = !isAccepted && job.status !== 'OPEN'
 
@@ -186,6 +214,19 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
       toast.error(e instanceof Error ? e.message : 'Could not accept applicant.')
     } finally {
       setAccepting(false)
+    }
+  }
+
+  async function decline() {
+    setDeclining(true)
+    try {
+      await api.applications.decline(app.id)
+      toast.success('Applicant declined', { description: 'They have been notified.' })
+      await refreshAll()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not decline applicant.')
+    } finally {
+      setDeclining(false)
     }
   }
 
@@ -222,12 +263,29 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
       {isAccepted && app.applicantContact ? (
         <ContactBar contact={app.applicantContact} name={app.applicant.fullName} />
       ) : null}
-      {app.status === 'PENDING' && job.status === 'OPEN' ? (
-        <Button className="h-10 font-bold" onClick={accept} disabled={accepting}>
-          {accepting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />}
-          Accept Applicant
-        </Button>
-      ) : null}
+      <div className="flex gap-2">
+        <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 flex-1 font-bold')}>
+          <MessageCircle aria-hidden="true" />
+          Message
+        </Link>
+        {app.status === 'PENDING' && job.status === 'OPEN' ? (
+          <>
+            <Button
+              variant="destructive"
+              className="h-10 flex-1 font-bold"
+              onClick={decline}
+              disabled={declining}
+            >
+              {declining ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+              Decline
+            </Button>
+            <Button className="h-10 flex-1 font-bold" onClick={accept} disabled={accepting}>
+              {accepting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />}
+              Accept
+            </Button>
+          </>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -273,6 +331,10 @@ function AppliedTab() {
                 <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
               )
             ) : null}
+            <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
+              <MessageCircle aria-hidden="true" />
+              {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
+            </Link>
           </article>
         </li>
       ))}
