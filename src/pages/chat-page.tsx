@@ -83,7 +83,9 @@ function ChatConversation() {
       setDraft('')
       void globalMutate(CHAT_THREADS_KEY)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not send your message.')
+      toast.error('Could not send message', {
+        description: err instanceof Error ? err.message : 'Check your connection and try again.',
+      })
     } finally {
       setSending(false)
     }

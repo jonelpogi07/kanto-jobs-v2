@@ -39,11 +39,15 @@ export function ReviewDialog({
     try {
       await api.jobs.complete(job.id)
       await api.jobs.review(job.id, { rating, comment })
-      toast.success(`Gig completed. Salamat, ${worker.fullName.split(' ')[0]}!`)
+      toast.success('Gig completed', {
+        description: `Thanks for reviewing ${worker.fullName.split(' ')[0]}.`,
+      })
       onOpenChange(false)
       await refreshAll()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Something went wrong.')
+      toast.error('Could not complete gig', {
+        description: e instanceof Error ? e.message : 'Please try again in a moment.',
+      })
     } finally {
       setSubmitting(false)
     }

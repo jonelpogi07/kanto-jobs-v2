@@ -89,11 +89,13 @@ function PostJobForm() {
         scheduledAt: timing === 'SCHEDULED' ? new Date(scheduledAt).toISOString() : null,
         estimatedDuration: duration.trim() || null,
       })
-      toast.success('Gig posted!', { description: 'Nearby part-timers can now send pitches.' })
+      toast.success('Gig posted', { description: 'Nearby part-timers can now discover and pitch for it.' })
       await refreshAll()
       navigate(`/jobs/${job.id}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not post gig.')
+      toast.error('Could not post gig', {
+        description: err instanceof Error ? err.message : 'Please review your details and try again.',
+      })
     } finally {
       setSubmitting(false)
     }

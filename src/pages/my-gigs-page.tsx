@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router'
+import { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
 import { CheckCircle2, ChevronDown, Inbox, Loader2, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ApplicationStatusBadge, JobStatusBadge, SkillTag, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
 import { RatingInline } from '@/components/rating'
 import { RequireAuth } from '@/components/require-auth'
@@ -119,6 +120,7 @@ function PostedTab() {
 function PostedJobCard({ job }: { job: JobPostDTO }) {
   const [expanded, setExpanded] = useState(job.status === 'IN_PROGRESS')
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, expanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
@@ -128,14 +130,14 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
   const canCancel = job.status === 'OPEN' || job.status === 'IN_PROGRESS'
 
   async function cancel() {
-    if (!window.confirm('Cancel this gig? This cannot be undone.')) return
     setCancelling(true)
     try {
       await api.jobs.cancel(job.id)
-      toast.success('Gig cancelled', { description: 'All applicants have been notified.' })
+      toast.success('Gig cancelled', { description: 'Applicants have been notified. You can post a new gig anytime.' })
+      setConfirmCancel(false)
       await refreshAll()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not cancel gig.')
+      toast.error('Could not cancel gig', { description: e instanceof Error ? e.message : 'Please try again.' })
     } finally {
       setCancelling(false)
     }
@@ -201,12 +203,12 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
           {canCancel && (
             <Button
               variant="destructive"
-              className="h-10 mt-2"
-              onClick={cancel}
+              className="mt-2 h-10 font-semibold"
+              onClick={() => setConfirmCancel(true)}
               disabled={cancelling}
             >
-              {cancelling ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
-              Cancel Gig
+              <X className="size-4" />
+              Cancel gig
             </Button>
           )}
         </div>
@@ -215,6 +217,17 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
       {accepted ? (
         <ReviewDialog job={job} worker={accepted.applicant} open={reviewOpen} onOpenChange={setReviewOpen} />
       ) : null}
+      <ConfirmDialog
+        open={confirmCancel}
+        onOpenChange={setConfirmCancel}
+        intent="destructive"
+        title="Cancel this gig?"
+        description="This will stop new pitches and notify applicants. This action cannot be undone."
+        confirmLabel="Yes, cancel gig"
+        cancelLabel="Keep gig"
+        loading={cancelling}
+        onConfirm={cancel}
+      />
     </article>
   )
 }
@@ -223,6 +236,7 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const refreshAll = useRefreshAll()
   const [accepting, setAccepting] = useState(false)
   const [declining, setDeclining] = useState(false)
+  const [confirmDecline, setConfirmDecline] = useState(false)
   const isAccepted = app.status === 'ACCEPTED'
   const dimmed = !isAccepted && job.status !== 'OPEN'
 
@@ -231,25 +245,25 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
     try {
       await api.applications.accept(app.id)
       toast.success(`${app.applicant.fullName.split(' ')[0]} is hired!`, {
-        description: 'Contact details are now unlocked.',
+        description: 'Contact details are now unlocked so you can coordinate.',
       })
       await refreshAll()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not accept applicant.')
+      toast.error('Could not accept applicant', { description: e instanceof Error ? e.message : 'Please try again.' })
     } finally {
       setAccepting(false)
     }
   }
 
   async function decline() {
-    if (!window.confirm('Decline this applicant?')) return
     setDeclining(true)
     try {
       await api.applications.decline(app.id)
-      toast.success('Applicant declined', { description: 'They have been notified.' })
+      toast.success('Applicant declined', { description: 'They have been notified of your decision.' })
+      setConfirmDecline(false)
       await refreshAll()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not decline applicant.')
+      toast.error('Could not decline applicant', { description: e instanceof Error ? e.message : 'Please try again.' })
     } finally {
       setDeclining(false)
     }
@@ -298,19 +312,31 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
             <Button
               variant="destructive"
               className="h-10 flex-1 font-bold"
-              onClick={decline}
-              disabled={declining}
+              onClick={() => setConfirmDecline(true)}
+              disabled={declining || accepting}
             >
-              {declining ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+              <X className="size-4" />
               Decline
             </Button>
-            <Button className="h-10 flex-1 font-bold" onClick={accept} disabled={accepting}>
+            <Button className="h-10 flex-1 font-bold" onClick={accept} disabled={accepting || declining}>
               {accepting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />}
               Accept
             </Button>
           </>
         ) : null}
       </div>
+
+      <ConfirmDialog
+        open={confirmDecline}
+        onOpenChange={setConfirmDecline}
+        intent="destructive"
+        title={`Decline ${app.applicant.fullName.split(' ')[0]}'s pitch?`}
+        description="They will be notified and removed from your active applicants for this gig."
+        confirmLabel="Decline applicant"
+        cancelLabel="Keep for now"
+        loading={declining}
+        onConfirm={decline}
+      />
     </div>
   )
 }
@@ -318,24 +344,35 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
 function AppliedTab() {
   const { data, isLoading } = useMyApplications()
   const refreshAll = useRefreshAll()
+  const navigate = useNavigate()
+  const [cancelTarget, setCancelTarget] = useState<ApplicationDTO | null>(null)
   const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [filter, setFilter] = useState<'ALL' | ApplicationStatus>('ALL')
-  if (isLoading) return <Loading />
   const apps = data?.content ?? []
   const filteredApps = filter === 'ALL' ? apps : apps.filter((a) => a.status === filter)
+  const cancelTargetTitle = useMemo(() => cancelTarget?.job?.title ?? 'this gig', [cancelTarget])
+
+  if (isLoading) return <Loading />
   if (apps.length === 0) {
     return <Empty title="No pitches sent yet" body="Find a gig nearby and send your first pitch." cta="Explore gigs" to="/explore" />
   }
 
-  async function cancel(appId: number) {
-    if (!window.confirm('Cancel your application for this gig?')) return
-    setCancellingId(appId)
+  async function cancel() {
+    if (!cancelTarget) return
+    setCancellingId(cancelTarget.id)
     try {
-      await api.applications.cancel(appId)
-      toast.success('Application cancelled')
+      await api.applications.cancel(cancelTarget.id)
+      toast.success('Application cancelled', {
+        description: `Your pitch for "${cancelTargetTitle}" has been withdrawn.`,
+        action: {
+          label: 'Explore gigs',
+          onClick: () => navigate('/explore'),
+        },
+      })
+      setCancelTarget(null)
       await refreshAll()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not cancel application.')
+      toast.error('Could not cancel application', { description: e instanceof Error ? e.message : 'Please try again.' })
     } finally {
       setCancellingId(null)
     }
@@ -407,7 +444,7 @@ function AppliedTab() {
                   <Button
                     variant="destructive"
                     className="h-10 flex-1 font-bold"
-                    onClick={() => cancel(app.id)}
+                    onClick={() => setCancelTarget(app)}
                     disabled={cancellingId === app.id}
                   >
                     {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
@@ -419,6 +456,18 @@ function AppliedTab() {
           </li>
         ))}
       </ul>
+
+      <ConfirmDialog
+        open={cancelTarget != null}
+        onOpenChange={(open) => !open && setCancelTarget(null)}
+        intent="destructive"
+        title="Cancel your application?"
+        description={`Your pitch for "${cancelTargetTitle}" will be withdrawn. You can apply again later if the gig is still open.`}
+        confirmLabel="Cancel application"
+        cancelLabel="Keep application"
+        loading={cancellingId != null}
+        onConfirm={cancel}
+      />
     </div>
   )
 }

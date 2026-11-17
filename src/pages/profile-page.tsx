@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { SkillTag, VerifiedBadge } from '@/components/badges'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EditProfileDialog } from '@/components/edit-profile-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
 import { Stars } from '@/components/rating'
@@ -26,6 +27,7 @@ export function ProfilePage() {
 function ProfileContent() {
   const { user, signOut } = useAuth()
   const [editing, setEditing] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
   if (!user) return null
 
   return (
@@ -73,12 +75,29 @@ function ProfileContent() {
 
       <Reviews user={user} />
 
-      <Button variant="ghost" className="h-11 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={signOut}>
+      <Button
+        variant="ghost"
+        className="h-11 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => setConfirmLogout(true)}
+      >
         <LogOut aria-hidden="true" />
         Log out
       </Button>
 
       {editing ? <EditProfileDialog user={user} open={editing} onOpenChange={setEditing} /> : null}
+      <ConfirmDialog
+        open={confirmLogout}
+        onOpenChange={setConfirmLogout}
+        intent="destructive"
+        title="Log out of KantoJobs?"
+        description="You can sign back in anytime with your phone number."
+        confirmLabel="Log out"
+        cancelLabel="Stay signed in"
+        onConfirm={() => {
+          setConfirmLogout(false)
+          signOut()
+        }}
+      />
     </div>
   )
 }

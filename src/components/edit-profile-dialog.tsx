@@ -66,10 +66,12 @@ export function EditProfileDialog({
         avatarUrl: user.avatarUrl,
       })
       await mutate([ME_KEY, tokenStorage.get()], updated, { revalidate: false })
-      toast.success('Profile updated')
+      toast.success('Profile updated', { description: 'Your changes are now visible to posters and applicants.' })
       onOpenChange(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not save profile.')
+      toast.error('Could not save profile', {
+        description: err instanceof Error ? err.message : 'Please check your details and try again.',
+      })
     } finally {
       setSaving(false)
     }

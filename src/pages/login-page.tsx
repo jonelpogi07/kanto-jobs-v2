@@ -32,7 +32,9 @@ export function LoginPage() {
     try {
       const res = await promise
       await signIn(res)
-      toast.success(`Welcome, ${res.user.fullName.split(' ')[0]}!`)
+      toast.success(`Welcome, ${res.user.fullName.split(' ')[0]}!`, {
+        description: 'You are signed in and ready to find or post gigs.',
+      })
       navigate(redirect, { replace: true })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')

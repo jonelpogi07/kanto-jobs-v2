@@ -77,6 +77,12 @@
   }
 }
 
+[data-sonner-toast][data-type="success"] [data-close-button] {
+  color: var(--foreground) !important;
+  background: var(--background) !important;
+  border-color: var(--border) !important;
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {

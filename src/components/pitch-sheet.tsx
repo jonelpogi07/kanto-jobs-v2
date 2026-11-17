@@ -41,12 +41,14 @@ export function PitchSheet({
     setSubmitting(true)
     try {
       await api.jobs.apply(job.id, { pitch })
-      toast.success('Pitch sent!', { description: `${job.poster.fullName} will be notified.` })
+      toast.success('Pitch sent', { description: `${job.poster.fullName} will be notified about your application.` })
       onOpenChange(false)
       setPitch('')
       await refreshAll()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not send pitch.')
+      toast.error('Could not send pitch', {
+        description: e instanceof Error ? e.message : 'Please try again in a moment.',
+      })
     } finally {
       setSubmitting(false)
     }
