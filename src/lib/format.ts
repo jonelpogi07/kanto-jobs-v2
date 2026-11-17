@@ -42,7 +42,7 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   PENDING: 'Pending',
   ACCEPTED: 'Accepted',
-  REJECTED: 'Not selected',
+  REJECTED: 'Declined',
   WITHDRAWN: 'Withdrawn',
 }
 

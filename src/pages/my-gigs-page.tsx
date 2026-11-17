@@ -105,6 +105,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
   const canCancel = job.status === 'OPEN' || job.status === 'IN_PROGRESS'
 
   async function cancel() {
+    if (!window.confirm('Cancel this gig? This cannot be undone.')) return
     setCancelling(true)
     try {
       await api.jobs.cancel(job.id)
@@ -218,6 +219,7 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   }
 
   async function decline() {
+    if (!window.confirm('Decline this applicant?')) return
     setDeclining(true)
     try {
       await api.applications.decline(app.id)
