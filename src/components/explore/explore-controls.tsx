@@ -17,16 +17,16 @@ export function LocationPicker() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex min-w-0 items-center gap-2 rounded-lg text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-          <MapPin className="size-4.5" aria-hidden="true" />
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+          <MapPin className="size-4" aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[11px] font-medium text-muted-foreground">Gigs near</span>
-          <span className="flex items-center gap-1 text-sm font-bold text-foreground">
+          <span className="block text-[10px] font-medium text-muted-foreground">Gigs near</span>
+          <span className="flex items-center gap-1 text-xs font-bold text-foreground">
             <span className="truncate">{`${location.barangay}, ${location.city.split(',')[0]}`}</span>
-            <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
+            <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
           </span>
         </span>
       </button>

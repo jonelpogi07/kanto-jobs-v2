@@ -2,6 +2,7 @@ import { useDeferredValue, useState } from 'react'
 import { Link } from 'react-router'
 import { Search, SearchX } from 'lucide-react'
 import { CategoryPills, FilterButton, LocationPicker, type FeedFilters } from '@/components/explore/explore-controls'
+import { BrandLogo } from '@/components/brand-logo'
 import { JobCard, JobCardSkeleton } from '@/components/job-card'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJobSearch } from '@/hooks/use-api'
@@ -23,15 +24,25 @@ export function ExplorePage() {
     <>
       <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-border bg-background/95 px-4 pt-4 pb-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <LocationPicker />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Link
+              to="/explore"
+              aria-label="Kanto Jobs home"
+              className="shrink-0 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <BrandLogo size="sm" />
+            </Link>
+            <span className="h-6 w-px shrink-0 bg-border" aria-hidden="true" />
+            <LocationPicker />
+          </div>
           {user ? (
-            <Link to="/profile" aria-label="Your profile" className="rounded-full">
+            <Link to="/profile" aria-label="Your profile" className="shrink-0 rounded-full">
               <UserAvatar user={user} />
             </Link>
           ) : (
             <Link
               to="/login"
-              className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background hover:bg-foreground/90"
+              className="shrink-0 rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background hover:bg-foreground/90"
             >
               Log in
             </Link>

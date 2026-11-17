@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { BrandLogo } from '@/components/brand-logo'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 import { DEMO_CREDENTIALS } from '@/mocks/data'
@@ -67,14 +68,7 @@ export function LoginPage() {
       </Link>
 
       <div className="mt-8 flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-lg font-black text-primary-foreground">
-            K
-          </span>
-          <span className="text-xl font-extrabold tracking-tight">
-            Kanto<span className="text-primary">-Jobs</span>
-          </span>
-        </div>
+        <BrandLogo />
         <h1 className="mt-4 text-balance text-3xl leading-tight font-extrabold">
           {mode === 'login' ? 'Raket sa kanto, kita agad.' : 'Gumawa ng account.'}
         </h1>

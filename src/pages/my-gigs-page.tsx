@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { CheckCircle2, ChevronDown, Inbox, Loader2, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { ApplicationStatusBadge, JobStatusBadge, SkillTag, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -12,10 +13,10 @@ import { RequireAuth } from '@/components/require-auth'
 import { ReviewDialog } from '@/components/review-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll } from '@/hooks/use-api'
-import { formatPay, formatSchedule, timeAgo } from '@/lib/format'
+import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
-import type { ApplicationDTO, JobPostDTO } from '@/types'
+import type { ApplicationDTO, ApplicationStatus, JobPostDTO } from '@/types'
 
 export function MyGigsPage() {
   return (
@@ -69,19 +70,40 @@ function Empty({ title, body, cta, to }: { title: string; body: string; cta: str
 
 function PostedTab() {
   const { data, isLoading } = useMyJobs()
+  const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL')
   if (isLoading) return <Loading />
   const jobs = data?.content ?? []
   if (jobs.length === 0) {
     return <Empty title="No gigs posted yet" body="Need help with an errand or repair?" cta="Post a gig" to="/post-job" />
   }
+  const filteredJobs = filter === 'ALL' ? jobs : jobs.filter((j) => j.status === filter)
   const groups = [
-    { label: 'Open', items: jobs.filter((j) => j.status === 'OPEN') },
-    { label: 'In Progress', items: jobs.filter((j) => j.status === 'IN_PROGRESS') },
-    { label: 'Completed', items: jobs.filter((j) => j.status === 'COMPLETED' || j.status === 'CANCELLED') },
+    { label: 'Open', items: filteredJobs.filter((j) => j.status === 'OPEN') },
+    { label: 'In Progress', items: filteredJobs.filter((j) => j.status === 'IN_PROGRESS') },
+    { label: 'Completed', items: filteredJobs.filter((j) => j.status === 'COMPLETED') },
+    { label: 'Cancelled', items: filteredJobs.filter((j) => j.status === 'CANCELLED') },
   ].filter((g) => g.items.length)
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-4 pb-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">Filter by status</h2>
+        <Select
+          value={filter}
+          onValueChange={(v) => setFilter((v as 'ALL' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED') ?? 'ALL')}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All</SelectItem>
+            <SelectItem value="OPEN">Open</SelectItem>
+            <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+            <SelectItem value="COMPLETED">Completed</SelectItem>
+            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {groups.map((g) => (
         <section key={g.label} aria-label={g.label} className="flex flex-col gap-3">
           <h2 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{`${g.label} (${g.items.length})`}</h2>
@@ -297,8 +319,10 @@ function AppliedTab() {
   const { data, isLoading } = useMyApplications()
   const refreshAll = useRefreshAll()
   const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const [filter, setFilter] = useState<'ALL' | ApplicationStatus>('ALL')
   if (isLoading) return <Loading />
   const apps = data?.content ?? []
+  const filteredApps = filter === 'ALL' ? apps : apps.filter((a) => a.status === filter)
   if (apps.length === 0) {
     return <Empty title="No pitches sent yet" body="Find a gig nearby and send your first pitch." cta="Explore gigs" to="/explore" />
   }
@@ -318,58 +342,83 @@ function AppliedTab() {
   }
 
   return (
-    <ul className="flex flex-col gap-3 px-4 pt-4 pb-6">
-      {apps.map((app) => (
-        <li key={app.id}>
-          <article className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-            <div className="flex items-center justify-between gap-2">
-              <ApplicationStatusBadge status={app.status} />
-              <span className="text-xs text-muted-foreground">{`Sent ${timeAgo(app.createdAt)}`}</span>
-            </div>
-            {app.job ? (
-              <>
-                <Link to={`/jobs/${app.job.id}`} className="font-bold leading-snug hover:text-primary">
-                  {app.job.title}
+    <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wide">Filter by status</h2>
+        <Select
+          value={filter}
+          onValueChange={(v) => setFilter((v as 'ALL' | ApplicationStatus) ?? 'ALL')}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="ACCEPTED">Accepted</SelectItem>
+            <SelectItem value="REJECTED">Declined</SelectItem>
+            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <ul className="flex flex-col gap-3">
+        {filteredApps.length === 0 ? (
+          <li className="rounded-2xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
+            No {APPLICATION_STATUS_LABELS[filter as ApplicationStatus].toLowerCase()} applications.
+          </li>
+        ) : null}
+        {filteredApps.map((app) => (
+          <li key={app.id}>
+            <article className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-2">
+                <ApplicationStatusBadge status={app.status} />
+                <span className="text-xs text-muted-foreground">{`Sent ${timeAgo(app.createdAt)}`}</span>
+              </div>
+              {app.job ? (
+                <>
+                  <Link to={`/jobs/${app.job.id}`} className="font-bold leading-snug hover:text-primary">
+                    {app.job.title}
+                  </Link>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <UserAvatar user={app.job.poster} className="size-5 text-[9px]" />
+                    <span className="truncate">{app.job.poster.fullName}</span>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-bold text-success">{formatPay(app.job.amount, app.job.compensationType)}</span>
+                  </div>
+                </>
+              ) : null}
+              <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
+              {app.status === 'ACCEPTED' && app.posterContact && app.job ? (
+                app.job.status === 'COMPLETED' ? (
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                    <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+                    Gig completed. Great work!
+                  </p>
+                ) : (
+                  <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
+                )
+              ) : null}
+              <div className="flex gap-2">
+                <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 flex-1 font-bold')}>
+                  <MessageCircle aria-hidden="true" />
+                  {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
                 </Link>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <UserAvatar user={app.job.poster} className="size-5 text-[9px]" />
-                  <span className="truncate">{app.job.poster.fullName}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="font-bold text-success">{formatPay(app.job.amount, app.job.compensationType)}</span>
-                </div>
-              </>
-            ) : null}
-            <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
-            {app.status === 'ACCEPTED' && app.posterContact && app.job ? (
-              app.job.status === 'COMPLETED' ? (
-                <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
-                  <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
-                  Gig completed. Great work!
-                </p>
-              ) : (
-                <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
-              )
-            ) : null}
-            <div className="flex gap-2">
-              <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 flex-1 font-bold')}>
-                <MessageCircle aria-hidden="true" />
-                {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
-              </Link>
-              {app.status === 'PENDING' && (
-                <Button
-                  variant="destructive"
-                  className="h-10 flex-1 font-bold"
-                  onClick={() => cancel(app.id)}
-                  disabled={cancellingId === app.id}
-                >
-                  {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
-                  Cancel
-                </Button>
-              )}
-            </div>
-          </article>
-        </li>
-      ))}
-    </ul>
+                {app.status === 'PENDING' && (
+                  <Button
+                    variant="destructive"
+                    className="h-10 flex-1 font-bold"
+                    onClick={() => cancel(app.id)}
+                    disabled={cancellingId === app.id}
+                  >
+                    {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
