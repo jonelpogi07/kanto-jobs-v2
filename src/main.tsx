@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/lib/auth'
 import { LocationProvider } from '@/lib/location'
 import { App } from './App'
+import '@flaticon/flaticon-uicons/css/solid/rounded.css'
 import './index.css'
 
 createRoot(document.getElementById('root')!).render(
