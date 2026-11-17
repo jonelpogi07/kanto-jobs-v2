@@ -1,0 +1,142 @@
+import { useState } from 'react'
+import { LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { SkillTag, VerifiedBadge } from '@/components/badges'
+import { EditProfileDialog } from '@/components/edit-profile-dialog'
+import { PageHeader } from '@/components/layout/app-shell'
+import { Stars } from '@/components/rating'
+import { RequireAuth } from '@/components/require-auth'
+import { UserAvatar } from '@/components/user-avatar'
+import { useUserReviews } from '@/hooks/use-api'
+import { useAuth } from '@/lib/auth'
+import { timeAgo } from '@/lib/format'
+import type { UserDTO } from '@/types'
+
+export function ProfilePage() {
+  return (
+    <>
+      <PageHeader title="Profile" />
+      <RequireAuth title="Log in to view your profile">
+        <ProfileContent />
+      </RequireAuth>
+    </>
+  )
+}
+
+function ProfileContent() {
+  const { user, signOut } = useAuth()
+  const [editing, setEditing] = useState(false)
+  if (!user) return null
+
+  return (
+    <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
+      <section className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 text-center">
+        <UserAvatar user={user} className="size-24 text-3xl" />
+        <div className="flex flex-col items-center gap-1">
+          <h2 className="text-xl font-extrabold">{user.fullName}</h2>
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            <MapPin className="size-3.5 text-primary" aria-hidden="true" />
+            {`${user.barangay}, ${user.city}`}
+          </p>
+        </div>
+        {user.phoneVerified ? (
+          <VerifiedBadge />
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+            <ShieldAlert className="size-3.5" aria-hidden="true" />
+            Phone not verified
+          </span>
+        )}
+        {user.bio ? <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p> : null}
+        <Button variant="outline" className="mt-1 h-10 w-full" onClick={() => setEditing(true)}>
+          <Pencil aria-hidden="true" />
+          Edit Profile
+        </Button>
+      </section>
+
+      <Stats user={user} />
+
+      <section aria-labelledby="skills-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        <h2 id="skills-heading" className="text-sm font-bold">
+          Skills
+        </h2>
+        {user.skills.length ? (
+          <div className="flex flex-wrap gap-2">
+            {user.skills.map((s) => (
+              <SkillTag key={s}>{s}</SkillTag>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Add skills so posters know what you can do.</p>
+        )}
+      </section>
+
+      <Reviews user={user} />
+
+      <Button variant="ghost" className="h-11 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={signOut}>
+        <LogOut aria-hidden="true" />
+        Log out
+      </Button>
+
+      {editing ? <EditProfileDialog user={user} open={editing} onOpenChange={setEditing} /> : null}
+    </div>
+  )
+}
+
+function Stats({ user }: { user: UserDTO }) {
+  const items = [
+    { label: 'Rating', value: user.ratingCount ? user.ratingAverage.toFixed(1) : '—' },
+    { label: 'Reviews', value: String(user.ratingCount) },
+    { label: 'Gigs done', value: String(user.completedGigs) },
+  ]
+  return (
+    <dl className="grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card py-3">
+      {items.map((i) => (
+        <div key={i.label} className="flex flex-col items-center gap-0.5">
+          <dd className="text-xl font-extrabold">{i.value}</dd>
+          <dt className="text-[11px] font-medium text-muted-foreground">{i.label}</dt>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+function Reviews({ user }: { user: UserDTO }) {
+  const { data } = useUserReviews(user.id)
+  const reviews = data?.content ?? []
+
+  return (
+    <section aria-labelledby="reviews-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between">
+        <h2 id="reviews-heading" className="text-sm font-bold">
+          Reviews
+        </h2>
+        {user.ratingCount ? (
+          <span className="flex items-center gap-1.5 text-sm font-bold">
+            <Stars value={user.ratingAverage} size="size-3.5" />
+            {user.ratingAverage.toFixed(1)}
+          </span>
+        ) : null}
+      </div>
+      {reviews.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No reviews yet. Complete a gig to earn your first one.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {reviews.map((r) => (
+            <li key={r.id} className="flex gap-3 py-3 first:pt-0 last:pb-0">
+              <UserAvatar user={r.reviewer} className="size-8 text-xs" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold">{r.reviewer.fullName}</p>
+                  <span className="shrink-0 text-xs text-muted-foreground">{timeAgo(r.createdAt)}</span>
+                </div>
+                <Stars value={r.rating} size="size-3" />
+                {r.comment ? <p className="mt-1 text-sm text-foreground/80">{r.comment}</p> : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
