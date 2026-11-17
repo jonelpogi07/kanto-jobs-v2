@@ -295,10 +295,26 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
 
 function AppliedTab() {
   const { data, isLoading } = useMyApplications()
+  const refreshAll = useRefreshAll()
   if (isLoading) return <Loading />
   const apps = data?.content ?? []
   if (apps.length === 0) {
     return <Empty title="No pitches sent yet" body="Find a gig nearby and send your first pitch." cta="Explore gigs" to="/explore" />
+  }
+  const [cancellingId, setCancellingId] = useState<number | null>(null)
+
+  async function cancel(appId: number) {
+    if (!window.confirm('Cancel your application for this gig?')) return
+    setCancellingId(appId)
+    try {
+      await api.applications.cancel(appId)
+      toast.success('Application cancelled')
+      await refreshAll()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not cancel application.')
+    } finally {
+      setCancellingId(null)
+    }
   }
 
   return (
@@ -334,10 +350,23 @@ function AppliedTab() {
                 <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
               )
             ) : null}
-            <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
-              <MessageCircle aria-hidden="true" />
-              {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
-            </Link>
+            <div className="flex gap-2">
+              <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 flex-1 font-bold')}>
+                <MessageCircle aria-hidden="true" />
+                {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
+              </Link>
+              {app.status === 'PENDING' && (
+                <Button
+                  variant="destructive"
+                  className="h-10 flex-1 font-bold"
+                  onClick={() => cancel(app.id)}
+                  disabled={cancellingId === app.id}
+                >
+                  {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+                  Cancel
+                </Button>
+              )}
+            </div>
           </article>
         </li>
       ))}

@@ -68,6 +68,8 @@ export interface KantoApi {
     accept(id: number): Promise<ApplicationDTO>
     /** POST /applications/{id}/decline */
     decline(id: number): Promise<ApplicationDTO>
+    /** POST /applications/{id}/cancel (applicant cancels their own application) */
+    cancel(id: number): Promise<ApplicationDTO>
   }
   chat: {
     /** GET /chat/threads — conversations the caller is part of. */

@@ -529,6 +529,19 @@ export const mockApi: KantoApi = {
       save()
       return toApplicationDTO(app, userId, false)
     },
+    async cancel(id) {
+      await delay()
+      const userId = currentUserId()
+      const app = db.applications.find((a) => a.id === id)
+      if (!app) throw new ApiError(404, 'Application not found.')
+      const job = findJob(app.jobId)
+      if (app.applicantId !== userId) throw new ApiError(403, 'Only the applicant can cancel their application.')
+      if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be cancelled.')
+      if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
+      app.status = 'WITHDRAWN'
+      save()
+      return toApplicationDTO(app, userId, false)
+    },
   },
 
   chat: {

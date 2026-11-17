@@ -74,6 +74,7 @@ const springBootApi: KantoApi = {
       data(http.get<Page<ApplicationDTO>>('/applications/mine', { params: { page, size } })),
     accept: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/accept`)),
     decline: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/decline`)),
+    cancel: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/cancel`)),
   },
   chat: {
     threads: () => data(http.get<ChatThreadDTO[]>('/chat/threads')),
