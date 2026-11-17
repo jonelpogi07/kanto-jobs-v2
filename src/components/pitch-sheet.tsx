@@ -77,7 +77,7 @@ export function PitchSheet({
                     type="button"
                     onClick={() => addTemplate(t)}
                     disabled={used}
-                    className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-soft px-3 py-1.5 text-xs font-semibold text-orange-700 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-95 disabled:opacity-40"
+                    className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary-soft px-3 py-1.5 text-xs font-semibold text-orange-700 dark:text-orange-300 outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-95 disabled:opacity-40"
                   >
                     <Plus className="size-3" aria-hidden="true" />
                     {t}

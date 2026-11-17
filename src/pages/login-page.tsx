@@ -60,7 +60,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col px-5 pt-4 pb-8">
+    <div className="flex flex-1 flex-col px-5 pt-4 pb-8 bg-background">
       <Link
         to="/explore"
         className="inline-flex w-fit items-center gap-1 rounded-md text-sm font-semibold text-muted-foreground hover:text-foreground"
@@ -199,8 +199,8 @@ export function LoginPage() {
           }}
           className="mt-6 rounded-xl border border-dashed border-primary/40 bg-primary-soft px-4 py-3 text-left text-sm"
         >
-          <span className="font-semibold text-orange-800">Demo account</span>
-          <span className="block text-xs text-orange-800/80">
+          <span className="font-semibold text-orange-800 dark:text-orange-300">Demo account</span>
+          <span className="block text-xs text-orange-800/80 dark:text-orange-300/80">
             {`Tap to fill ${DEMO_CREDENTIALS.identifier} / ${DEMO_CREDENTIALS.password}`}
           </span>
         </button>

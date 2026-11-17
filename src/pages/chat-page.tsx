@@ -105,7 +105,7 @@ function ChatConversation() {
             {thread.otherUser.phoneVerified ? 'Phone verified' : 'KantoJobs member'}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2 py-1 text-[10px] font-bold text-emerald-700">
+        <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
           <span className="size-1.5 animate-pulse rounded-full bg-success" aria-hidden="true" />
           Live
         </span>

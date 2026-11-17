@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { Search, SearchX } from 'lucide-react'
 import { CategoryPills, FilterButton, LocationPicker, type FeedFilters } from '@/components/explore/explore-controls'
 import { BrandLogo } from '@/components/brand-logo'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { JobCard, JobCardSkeleton } from '@/components/job-card'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJobSearch } from '@/hooks/use-api'
@@ -35,18 +36,21 @@ export function ExplorePage() {
             <span className="h-6 w-px shrink-0 bg-border" aria-hidden="true" />
             <LocationPicker />
           </div>
-          {user ? (
-            <Link to="/profile" aria-label="Your profile" className="shrink-0 rounded-full">
-              <UserAvatar user={user} />
-            </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="shrink-0 rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background hover:bg-foreground/90"
-            >
-              Log in
-            </Link>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {user ? (
+              <Link to="/profile" aria-label="Your profile" className="shrink-0 rounded-full">
+                <UserAvatar user={user} />
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="shrink-0 rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background hover:bg-foreground/90"
+              >
+                Log in
+              </Link>
+            )}
+            <ThemeToggle variant="icon" aria-label="Appearance" />
+          </div>
         </div>
         <div className="flex gap-2">
           <label className="relative flex-1">

@@ -154,7 +154,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
           {job.title}
         </Link>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="font-bold text-success">{formatPay(job.amount, job.compensationType)}</span>
+          <span className="font-bold text-success dark:text-emerald-400">{formatPay(job.amount, job.compensationType)}</span>
           <span className="inline-flex items-center gap-1">
             <MapPin className="size-3" aria-hidden="true" />
             {job.barangay}
@@ -420,14 +420,14 @@ function AppliedTab() {
                     <UserAvatar user={app.job.poster} className="size-5 text-[9px]" />
                     <span className="truncate">{app.job.poster.fullName}</span>
                     <span aria-hidden="true">·</span>
-                    <span className="font-bold text-success">{formatPay(app.job.amount, app.job.compensationType)}</span>
+                    <span className="font-bold text-success dark:text-emerald-400">{formatPay(app.job.amount, app.job.compensationType)}</span>
                   </div>
                 </>
               ) : null}
               <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
               {app.status === 'ACCEPTED' && app.posterContact && app.job ? (
                 app.job.status === 'COMPLETED' ? (
-                  <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                     <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
                     Gig completed. Great work!
                   </p>

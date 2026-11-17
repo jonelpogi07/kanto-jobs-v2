@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   return (
-    <div className="min-h-dvh bg-slate-100 sm:py-6">
+    <div className="min-h-dvh bg-background sm:py-6">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:border sm:border-border sm:shadow-xl">
         <main className="flex flex-1 flex-col pb-20">
           <Outlet />

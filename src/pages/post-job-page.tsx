@@ -28,7 +28,7 @@ export function PostJobPage() {
 
 const chip =
   'h-10 rounded-xl border px-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-const chipOn = 'border-primary bg-primary-soft text-orange-800'
+const chipOn = 'border-primary bg-primary-soft text-orange-800 dark:text-orange-300'
 const chipOff = 'border-border bg-card text-foreground hover:border-foreground/30'
 
 function PostJobForm() {

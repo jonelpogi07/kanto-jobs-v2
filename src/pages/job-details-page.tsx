@@ -80,13 +80,13 @@ export function JobDetailsPage() {
           <h1 className="text-balance text-2xl leading-tight font-extrabold">{job.title}</h1>
           <div className="flex items-end justify-between gap-3 rounded-2xl bg-success-soft p-4">
             <div>
-              <p className="text-xs font-semibold text-emerald-800">
+              <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
                 {job.compensationType === 'HOURLY' ? 'Hourly rate' : 'Fixed pay'}
               </p>
-              <p className="text-3xl font-extrabold text-success">{formatPay(job.amount, job.compensationType)}</p>
+              <p className="text-3xl font-extrabold text-success dark:text-emerald-400">{formatPay(job.amount, job.compensationType)}</p>
             </div>
             <div className="flex flex-col items-end gap-1">
-              <span className="text-[11px] font-medium text-emerald-800">Paid via</span>
+              <span className="text-[11px] font-medium text-emerald-800 dark:text-emerald-300">Paid via</span>
               <div className="flex gap-1">
                 {job.paymentMethods.map((m) => (
                   <PaymentPill key={m} method={m} />
@@ -128,7 +128,7 @@ export function JobDetailsPage() {
             </div>
           </div>
           {job.poster.phoneVerified ? (
-            <p className="flex items-center gap-2 text-xs text-emerald-800">
+            <p className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
               <VerifiedBadge />
               Mobile number confirmed via OTP
             </p>

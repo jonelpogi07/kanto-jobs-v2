@@ -23,7 +23,7 @@ export function ContactBar({ contact, name }: { contact: ContactInfoDTO; name: s
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-success/30 bg-success-soft p-3">
-      <p className="text-xs font-semibold text-emerald-800">
+      <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
         {`Coordinate with ${name.split(' ')[0]}`}
         {contact.phoneNumber ? <span className="font-normal">{` · ${contact.phoneNumber}`}</span> : null}
       </p>

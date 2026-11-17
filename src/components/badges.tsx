@@ -31,9 +31,9 @@ export function UrgencyBadge({ timing, className }: { timing: JobTiming; classNa
 }
 
 const PAYMENT_STYLES: Record<PaymentMethod, string> = {
-  CASH: 'border-success/30 bg-success-soft text-emerald-700',
-  GCASH: 'border-blue-200 bg-blue-50 text-blue-700',
-  MAYA: 'border-emerald-200 bg-white text-emerald-700',
+  CASH: 'border-success/30 bg-success-soft text-emerald-700 dark:text-emerald-300',
+  GCASH: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-900/20 dark:text-blue-400',
+  MAYA: 'border-emerald-200 bg-white text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-900/20 dark:text-emerald-400',
 }
 
 export function PaymentPill({ method }: { method: PaymentMethod }) {
@@ -47,7 +47,7 @@ export function VerifiedBadge({ compact = false }: { compact?: boolean }) {
     )
   }
   return (
-    <span className={cn(pill, 'bg-success-soft text-emerald-700')}>
+    <span className={cn(pill, 'bg-success-soft text-emerald-700 dark:text-emerald-300')}>
       <BadgeCheck className="size-3.5" aria-hidden="true" />
       Phone Verified
     </span>
@@ -55,9 +55,9 @@ export function VerifiedBadge({ compact = false }: { compact?: boolean }) {
 }
 
 const JOB_STATUS_STYLES: Record<JobStatus, string> = {
-  OPEN: 'bg-primary-soft text-orange-700',
-  IN_PROGRESS: 'bg-blue-50 text-blue-700',
-  COMPLETED: 'bg-success-soft text-emerald-700',
+  OPEN: 'bg-primary-soft text-orange-700 dark:text-orange-300',
+  IN_PROGRESS: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
+  COMPLETED: 'bg-success-soft text-emerald-700 dark:text-emerald-300',
   CANCELLED: 'bg-secondary text-muted-foreground',
 }
 
