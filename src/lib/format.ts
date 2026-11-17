@@ -43,7 +43,7 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   PENDING: 'Pending',
   ACCEPTED: 'Accepted',
   REJECTED: 'Declined',
-  WITHDRAWN: 'Withdrawn',
+  CANCELLED: 'Cancelled',
 }
 
 export const SKILL_SUGGESTIONS = [

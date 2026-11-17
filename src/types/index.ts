@@ -19,7 +19,7 @@ export type JobTiming = 'URGENT' | 'SCHEDULED' | 'FLEXIBLE'
 
 export type JobStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
 
-export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN'
+export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
 
 /** Lightweight user projection embedded in jobs, applications and reviews. */
 export interface UserSummaryDTO {

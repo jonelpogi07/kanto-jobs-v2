@@ -421,7 +421,7 @@ export interface SeedApplication {
   jobId: number
   applicantId: number
   pitch: string
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN'
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
   createdAt: string
 }
 

@@ -69,7 +69,7 @@ const APP_STATUS_STYLES: Record<ApplicationStatus, string> = {
   PENDING: 'bg-secondary text-foreground',
   ACCEPTED: 'bg-success text-white',
   REJECTED: 'bg-secondary text-muted-foreground',
-  WITHDRAWN: 'bg-secondary text-muted-foreground',
+  CANCELLED: 'bg-secondary text-muted-foreground',
 }
 
 export function ApplicationStatusBadge({ status }: { status: ApplicationStatus }) {

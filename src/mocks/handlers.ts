@@ -146,7 +146,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 
 function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }): JobPostDTO {
   const { posterId, ...rest } = job
-  const apps = db.applications.filter((a) => a.jobId === job.id && a.status !== 'WITHDRAWN')
+  const apps = db.applications.filter((a) => a.jobId === job.id && a.status !== 'CANCELLED')
   return {
     ...structuredClone(rest),
     poster: toSummary(findUser(posterId)),
@@ -538,7 +538,7 @@ export const mockApi: KantoApi = {
       if (app.applicantId !== userId) throw new ApiError(403, 'Only the applicant can cancel their application.')
       if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be cancelled.')
       if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
-      app.status = 'WITHDRAWN'
+      app.status = 'CANCELLED'
       save()
       return toApplicationDTO(app, userId, false)
     },
@@ -549,7 +549,7 @@ export const mockApi: KantoApi = {
       await delay(120)
       const userId = currentUserId()
       return db.applications
-        .filter((a) => a.status !== 'WITHDRAWN')
+        .filter((a) => a.status !== 'CANCELLED')
         .filter((a) => a.applicantId === userId || findJob(a.jobId).posterId === userId)
         .map((a) => toChatThread(a, userId))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
