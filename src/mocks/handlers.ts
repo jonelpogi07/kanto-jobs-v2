@@ -263,6 +263,60 @@ function paginate<T>(items: T[], page = 0, size = 20): Page<T> {
 
 const byNewest = <T extends { createdAt: string }>(a: T, b: T) => b.createdAt.localeCompare(a.createdAt)
 
+function dummyPitch(job: JobRecord, user: SeedUser): string {
+  const first = user.fullName.split(' ')[0]
+  const byCategory: Record<string, string[]> = {
+    ERRANDS_DELIVERY: [
+      `Hi! Available po ako for this. May sarili akong motor at mabilis po ako mag-deliver sa ${job.barangay}.`,
+      `Pwede po ako tumulong. Malapit lang ako at maaasahan, ${first} here — kaya ko pong tapusin agad.`,
+      `Good day! Sanay po ako sa errands at deliveries nearby. Ready po ako umalis anytime.`,
+    ],
+    HOME_REPAIR: [
+      `Kaya ko po itong ayusin. May dala akong sariling tools at may experience na po ako sa ganitong trabaho.`,
+      `Hello! ${first} po, marunong po ako sa home repairs. Pwede ko pong tingnan at ayusin agad.`,
+      `Available po ako. Maingat po ako magtrabaho at sisiguraduhin kong maayos ang resulta.`,
+    ],
+    CLEANING: [
+      `Hi! Masipag at malinis po ako magtrabaho. Available po ako sa schedule niyo.`,
+      `Pwede po akong tumulong maglinis. Detalyado po ako at may experience na sa ganitong gawain.`,
+      `Hello! ${first} po — ready po akong mag-deep clean at dalhin ang kailangan ko.`,
+    ],
+    EVENTS: [
+      `Hi! Masayahin at energetic po ako, perfect for events. Pwede po akong tumulong sa setup at coordination.`,
+      `Available po ako! May experience po ako sa events at siguradong maganda ang kakalabasan.`,
+      `Hello! ${first} po — kaya ko pong mag-assist para maging maayos at masaya ang event.`,
+    ],
+    DIGITAL_ADMIN: [
+      `Hi! Mabilis at accurate po ako sa computer tasks. Pwede ko pong simulan agad.`,
+      `Available po ako for this. Marunong po ako sa online/admin work at maaasahan sa deadlines.`,
+      `Hello! ${first} po — detail-oriented at kaya ko pong tapusin nang maayos.`,
+    ],
+  }
+  const pool = byCategory[job.category] ?? [
+    `Hi! Interested po ako sa gig na ito. Available po ako at gagawin ko nang maayos.`,
+  ]
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+function seedDummyApplicants(job: JobRecord) {
+  const candidates = db.users.filter((u) => u.id !== job.posterId)
+  if (candidates.length === 0) return
+  const count = Math.min(candidates.length, 2 + Math.floor(Math.random() * 3))
+  const picked = [...candidates].sort(() => Math.random() - 0.5).slice(0, count)
+  let id = nextId(db.applications)
+  const base = Date.now()
+  picked.forEach((user, i) => {
+    db.applications.push({
+      id: id++,
+      jobId: job.id,
+      applicantId: user.id,
+      pitch: dummyPitch(job, user),
+      status: 'PENDING',
+      createdAt: new Date(base - (picked.length - i) * 60_000).toISOString(),
+    })
+  })
+}
+
 // ---------- Mock API ----------
 
 export const mockApi: KantoApi = {
@@ -383,6 +437,7 @@ export const mockApi: KantoApi = {
         updatedAt: now(),
       }
       db.jobs.push(job)
+      seedDummyApplicants(job)
       save()
       return toJobDTO(job)
     },
