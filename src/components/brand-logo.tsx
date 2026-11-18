@@ -1,8 +1,9 @@
+import { HeartHandshake } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const SIZES = {
-  sm: { mark: 'size-8 rounded-lg text-base', text: 'text-sm' },
-  md: { mark: 'size-10 rounded-xl text-xl', text: 'text-xl' },
+  sm: { mark: 'size-8 rounded-lg', icon: 'size-4', text: 'text-sm' },
+  md: { mark: 'size-10 rounded-xl', icon: 'size-5', text: 'text-xl' },
 } as const
 
 export function BrandLogo({ size = 'md', className }: { size?: keyof typeof SIZES; className?: string }) {
@@ -16,7 +17,7 @@ export function BrandLogo({ size = 'md', className }: { size?: keyof typeof SIZE
         )}
         aria-hidden="true"
       >
-        <i className="fi fi-sr-heart-partner-handshake flex items-center justify-center leading-none" />
+        <HeartHandshake className={cn(s.icon)} strokeWidth={2.2} />
       </span>
       <span className={cn('font-extrabold tracking-tight', s.text)}>
         Kanto<span className="text-primary">-Jobs</span>
