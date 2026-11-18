@@ -20,7 +20,21 @@ export function JobCard({ job }: { job: JobPostDTO }) {
         </div>
 
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          {job.images && job.images.length > 0 && (
+            <div className="relative shrink-0">
+              <img
+                src={job.images[0]}
+                alt=""
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0"
+              />
+              {job.images.length > 1 && (
+                <span className="absolute bottom-1 right-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  +{job.images.length - 1}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted-foreground">{CATEGORY_LABELS[job.category]}</p>
             <h3 className="mt-0.5 text-pretty text-base leading-snug font-bold text-foreground group-hover:text-primary">
               {job.title}
