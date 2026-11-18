@@ -77,7 +77,32 @@ function PostJobForm() {
     const pending = files.map((file) => {
       return new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = () => resolve(String(reader.result))
+        reader.onload = () => {
+          const img = new Image()
+          img.onload = () => {
+            const MAX = 800
+            let width = img.width
+            let height = img.height
+            if (width > MAX || height > MAX) {
+              if (width >= height) {
+                height = Math.round((height * MAX) / width)
+                width = MAX
+              } else {
+                width = Math.round((width * MAX) / height)
+                height = MAX
+              }
+            }
+            const canvas = document.createElement('canvas')
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return resolve(String(reader.result))
+            ctx.drawImage(img, 0, 0, width, height)
+            resolve(canvas.toDataURL('image/jpeg', 0.7))
+          }
+          img.onerror = reject
+          img.src = String(reader.result)
+        }
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
@@ -375,6 +400,7 @@ function PostJobForm() {
     </form>
   )
 }
+
 
 
 

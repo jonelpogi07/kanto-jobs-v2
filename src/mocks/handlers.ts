@@ -70,14 +70,22 @@ function load(): MockDb {
     }
   }
   const fresh = seed()
-  localStorage.setItem(DB_KEY, JSON.stringify(fresh))
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(fresh))
+  } catch {
+    // ignore
+  }
   return fresh
 }
 
 let db = load()
 
 function save() {
-  localStorage.setItem(DB_KEY, JSON.stringify(db))
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(db))
+  } catch {
+    // storage full; ignore
+  }
 }
 
 export function resetMockDb() {
