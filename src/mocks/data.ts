@@ -195,6 +195,7 @@ export interface SeedJob {
   estimatedDuration: string | null
   status: JobStatus
   posterId: number
+  images: string[]
   createdAt: string
 }
 
@@ -213,6 +214,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '1 hour',
+    images: [
+      "https://picsum.photos/seed/gig102/600/400",
+    ],
     status: 'OPEN',
     posterId: 4,
     createdAt: hoursAgo(0.5),
@@ -231,6 +235,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '2 hours',
+    images: [
+      "https://picsum.photos/seed/gig103/600/400",
+    ],
     status: 'OPEN',
     posterId: 6,
     createdAt: hoursAgo(2),
@@ -249,6 +256,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'SCHEDULED',
     scheduledAt: hoursFromNow(44),
     estimatedDuration: '5-6 hours',
+    images: [
+      "https://picsum.photos/seed/gig104/600/400",
+    ],
     status: 'OPEN',
     posterId: 2,
     createdAt: hoursAgo(5),
@@ -267,6 +277,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'SCHEDULED',
     scheduledAt: hoursFromNow(72),
     estimatedDuration: '4 hours',
+    images: [
+      "https://picsum.photos/seed/gig105/600/400",
+    ],
     status: 'OPEN',
     posterId: 7,
     createdAt: hoursAgo(9),
@@ -285,6 +298,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'FLEXIBLE',
     scheduledAt: null,
     estimatedDuration: '6-8 hours total',
+    images: [
+      "https://picsum.photos/seed/gig106/600/400",
+    ],
     status: 'IN_PROGRESS',
     posterId: 3,
     createdAt: hoursAgo(28),
@@ -303,6 +319,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'FLEXIBLE',
     scheduledAt: null,
     estimatedDuration: '1-2 days',
+    images: [
+      "https://picsum.photos/seed/gig107/600/400",
+    ],
     status: 'OPEN',
     posterId: 8,
     createdAt: hoursAgo(20),
@@ -321,6 +340,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '2-3 hours',
+    images: [
+      "https://picsum.photos/seed/gig108/600/400",
+    ],
     status: 'OPEN',
     posterId: 3,
     createdAt: hoursAgo(1.2),
@@ -339,6 +361,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'SCHEDULED',
     scheduledAt: hoursFromNow(96),
     estimatedDuration: '1-2 days',
+    images: [
+      "https://picsum.photos/seed/gig109/600/400",
+    ],
     status: 'OPEN',
     posterId: 5,
     createdAt: hoursAgo(14),
@@ -357,6 +382,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'FLEXIBLE',
     scheduledAt: null,
     estimatedDuration: 'Half day',
+    images: [
+      "https://picsum.photos/seed/gig110/600/400",
+    ],
     status: 'OPEN',
     posterId: 6,
     createdAt: hoursAgo(30),
@@ -375,6 +403,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '3 hours',
+    images: [
+      "https://picsum.photos/seed/gig111/600/400",
+    ],
     status: 'OPEN',
     posterId: 1,
     createdAt: hoursAgo(1),
@@ -393,6 +424,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'SCHEDULED',
     scheduledAt: hoursFromNow(6),
     estimatedDuration: '2-3 hours',
+    images: [
+      "https://picsum.photos/seed/gig112/600/400",
+    ],
     status: 'IN_PROGRESS',
     posterId: 1,
     createdAt: hoursAgo(26),
@@ -410,6 +444,9 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'SCHEDULED',
     scheduledAt: hoursAgo(24 * 6),
     estimatedDuration: '4 hours',
+    images: [
+      "https://picsum.photos/seed/gig113/600/400",
+    ],
     status: 'COMPLETED',
     posterId: 1,
     createdAt: hoursAgo(24 * 9),
@@ -642,3 +679,7 @@ export const SEED_REVIEWS: SeedReview[] = [
     createdAt: hoursAgo(24 * 34),
   },
 ]
+
+
+
+

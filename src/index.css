@@ -125,6 +125,10 @@
   }
 }
 
+@utility overscroll-contain {
+  overscroll-behavior: contain;
+}
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }

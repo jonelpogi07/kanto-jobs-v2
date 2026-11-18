@@ -150,9 +150,20 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
           <JobStatusBadge status={job.status} />
           <span className="text-xs text-muted-foreground">{timeAgo(job.createdAt)}</span>
         </div>
-        <Link to={`/jobs/${job.id}`} className="font-bold leading-snug hover:text-primary">
-          {job.title}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to={`/jobs/${job.id}`} className="font-bold leading-snug hover:text-primary">
+            {job.title}
+          </Link>
+          {job.status === 'OPEN' && (
+            <Link
+              to={`/jobs/${job.id}/edit`}
+              className="text-xs font-medium text-muted-foreground hover:text-primary underline underline-offset-4"
+              aria-label={`Edit ${job.title}`}
+            >
+              Edit
+            </Link>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="font-bold text-success dark:text-emerald-400">{formatPay(job.amount, job.compensationType)}</span>
           <span className="inline-flex items-center gap-1">

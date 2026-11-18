@@ -62,6 +62,7 @@ const springBootApi: KantoApi = {
     search: (params) => data(http.get<Page<JobPostDTO>>('/jobs', { params })),
     getById: (id, coords) => data(http.get<JobPostDTO>(`/jobs/${id}`, { params: coords })),
     create: (req) => data(http.post<JobPostDTO>('/jobs', req)),
+    update: (id, req) => data(http.put<JobPostDTO>(`/jobs/${id}`, req)),
     mine: (page = 0, size = 20) => data(http.get<Page<JobPostDTO>>('/jobs/mine', { params: { page, size } })),
     complete: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/complete`)),
     cancel: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/cancel`)),

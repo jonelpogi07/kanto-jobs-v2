@@ -72,6 +72,7 @@ export interface JobPostDTO {
   poster: UserSummaryDTO
   applicantCount: number
   acceptedApplicationId: number | null
+  images: string[]
   createdAt: string
   updatedAt: string
 }
@@ -200,6 +201,25 @@ export interface CreateJobPostRequest {
   timing: JobTiming
   scheduledAt: string | null
   estimatedDuration: string | null
+  images: string[]
+}
+
+export interface UpdateJobPostRequest {
+  title: string
+  description: string
+  category: JobCategory
+  compensationType: CompensationType
+  amount: number
+  paymentMethods: PaymentMethod[]
+  barangay: string
+  city: string
+  landmark: string
+  latitude: number
+  longitude: number
+  timing: JobTiming
+  scheduledAt: string | null
+  estimatedDuration: string | null
+  images: string[]
 }
 
 export interface CreateApplicationRequest {

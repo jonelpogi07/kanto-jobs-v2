@@ -8,6 +8,7 @@ import { LoginPage } from '@/pages/login-page'
 import { MessagesPage } from '@/pages/messages-page'
 import { MyGigsPage } from '@/pages/my-gigs-page'
 import { PostJobPage } from '@/pages/post-job-page'
+import { EditJobPage } from '@/pages/edit-job-page'
 import { ProfilePage } from '@/pages/profile-page'
 
 const router = createBrowserRouter([
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/explore" replace /> },
       { path: '/explore', element: <ExplorePage /> },
       { path: '/jobs/:id', element: <JobDetailsPage /> },
+      { path: '/jobs/:id/edit', element: <EditJobPage /> },
       { path: '/post-job', element: <PostJobPage /> },
       { path: '/my-gigs', element: <MyGigsPage /> },
       { path: '/messages', element: <MessagesPage /> },

@@ -14,8 +14,8 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   return (
-    <div className="min-h-dvh bg-background sm:py-6">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:border sm:border-border sm:shadow-xl">
+    <div className="min-h-dvh overflow-x-hidden bg-background sm:py-6">
+      <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-x-hidden bg-background sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:border sm:border-border sm:shadow-xl">
         <main className="flex flex-1 flex-col pb-[calc(5rem+env(safe-area-inset-bottom))]">
           <Outlet />
         </main>
@@ -84,3 +84,4 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
     </header>
   )
 }
+

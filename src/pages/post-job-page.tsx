@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { Loader2, Rocket } from 'lucide-react'
+import { Loader2, Plus, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -47,6 +47,8 @@ function PostJobForm() {
   const [timing, setTiming] = useState<JobTiming>('URGENT')
   const [scheduledAt, setScheduledAt] = useState('')
   const [duration, setDuration] = useState('')
+  const [images, setImages] = useState<string[]>([])
+  const imagesScrollRef = useRef<HTMLDivElement>(null)
   const [submitting, setSubmitting] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
 
@@ -62,6 +64,37 @@ function PostJobForm() {
 
   function togglePayment(m: PaymentMethod) {
     setPaymentMethods((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]))
+  }
+
+  const MAX_IMAGES = 4
+
+  function onPickImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (images.length + files.length > MAX_IMAGES) {
+      toast.error(`Maximum ${MAX_IMAGES} photos allowed.`)
+      return
+    }
+    const pending = files.map((file) => {
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+    })
+    Promise.all(pending).then((dataUrls) => {
+      setImages((prev) => [...prev, ...dataUrls])
+    })
+    e.target.value = ''
+  }
+
+  function removeImage(index: number) {
+    const container = imagesScrollRef.current
+    const scrollLeft = container?.scrollLeft ?? 0
+    setImages((prev) => prev.filter((_, i) => i !== index))
+    requestAnimationFrame(() => {
+      if (container) container.scrollLeft = scrollLeft
+    })
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -88,6 +121,7 @@ function PostJobForm() {
         timing,
         scheduledAt: timing === 'SCHEDULED' ? new Date(scheduledAt).toISOString() : null,
         estimatedDuration: duration.trim() || null,
+        images,
       })
       toast.success('Gig posted', { description: 'Nearby part-timers can now discover and pitch for it.' })
       await refreshAll()
@@ -109,7 +143,7 @@ function PostJobForm() {
     ) : null
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6 px-4 pt-4 pb-6">
+    <form onSubmit={onSubmit} noValidate className="flex min-w-0 flex-col gap-6 px-4 pt-4 pb-6">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title">What do you need done?</Label>
         <Input
@@ -280,6 +314,60 @@ function PostJobForm() {
         />
       </fieldset>
 
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-medium">Gig photos</legend>
+        <p className="text-xs text-muted-foreground">
+          Up to {MAX_IMAGES} photos. These help nearby helpers see what the gig involves.
+        </p>
+        <div ref={imagesScrollRef} className="grid grid-cols-2 gap-3 w-full" role="region" aria-label="Gig photos">
+          {images.map((src, i) => (
+            <div key={i} className="relative group aspect-square w-full rounded-xl overflow-hidden border border-border bg-secondary">
+              <img
+                src={src}
+                alt={`Gig photo ${i + 1}`}
+                className="object-cover w-full h-full"
+              />
+              {i === 0 && (
+                <span className="absolute top-2 left-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
+                  Cover
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                aria-label={`Remove photo ${i + 1}`}
+                className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors"
+              >
+                <span className="sr-only">Remove</span>
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          ))}
+          {images.length < MAX_IMAGES && (
+            <div className="aspect-square w-full flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary hover:border-primary/50 transition-colors cursor-pointer group">
+              <input
+                id="images"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={onPickImages}
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('images')?.click()}
+                className="flex flex-col items-center justify-center w-full h-full"
+              >
+                <Plus className="size-6 mb-1.5 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
+                <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                  Add photos
+                </span>
+              </button>
+            </div>
+          )}
+        </div>
+      </fieldset>
+
       <Button type="submit" className="h-12 text-base font-bold" disabled={submitting}>
         {submitting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Rocket aria-hidden="true" />}
         Post gig
@@ -287,3 +375,6 @@ function PostJobForm() {
     </form>
   )
 }
+
+
+

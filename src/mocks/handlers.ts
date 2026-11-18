@@ -147,9 +147,10 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }): JobPostDTO {
   const { posterId, ...rest } = job
   const apps = db.applications.filter((a) => a.jobId === job.id && a.status !== 'CANCELLED')
-  return {
-    ...structuredClone(rest),
-    poster: toSummary(findUser(posterId)),
+    return {
+      ...structuredClone(rest),
+      images: rest.images ?? [],
+      poster: toSummary(findUser(posterId)),
     applicantCount: apps.length,
     acceptedApplicationId: apps.find((a) => a.status === 'ACCEPTED')?.id ?? null,
     distanceKm: coords
@@ -430,6 +431,7 @@ export const mockApi: KantoApi = {
       const posterId = currentUserId()
       const job: JobRecord = {
         ...req,
+        images: req.images ?? [],
         id: nextId(db.jobs),
         posterId,
         status: 'OPEN',
@@ -438,6 +440,33 @@ export const mockApi: KantoApi = {
       }
       db.jobs.push(job)
       seedDummyApplicants(job)
+      save()
+      return toJobDTO(job)
+    },
+    async update(id, req) {
+      await delay()
+      const userId = currentUserId()
+      const job = findJob(id)
+      if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can update this gig.')
+      if (job.status !== 'OPEN') throw new ApiError(409, 'Only open gigs can be updated.')
+      Object.assign(job, {
+        title: req.title.trim(),
+        description: req.description.trim(),
+        category: req.category,
+        compensationType: req.compensationType,
+        amount: req.amount,
+        paymentMethods: req.paymentMethods,
+        barangay: req.barangay,
+        city: req.city,
+        landmark: req.landmark.trim(),
+        latitude: req.latitude,
+        longitude: req.longitude,
+        timing: req.timing,
+        scheduledAt: req.timing === 'SCHEDULED' ? req.scheduledAt : null,
+        estimatedDuration: req.estimatedDuration?.trim() || null,
+        images: req.images ?? [],
+        updatedAt: now(),
+      })
       save()
       return toJobDTO(job)
     },

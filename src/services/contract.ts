@@ -13,6 +13,7 @@ import type {
   RegisterRequest,
   ReviewDTO,
   SendMessageRequest,
+  UpdateJobPostRequest,
   UpdateUserRequest,
   UserDTO,
 } from '@/types'
@@ -48,6 +49,8 @@ export interface KantoApi {
     getById(id: number, coords?: { lat: number; lng: number }): Promise<JobPostDTO>
     /** POST /jobs */
     create(req: CreateJobPostRequest): Promise<JobPostDTO>
+    /** PUT /jobs/{id}  (poster only) */
+    update(id: number, req: UpdateJobPostRequest): Promise<JobPostDTO>
     /** GET /jobs/mine */
     mine(page?: number, size?: number): Promise<Page<JobPostDTO>>
     /** POST /jobs/{id}/complete */

@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   ArrowLeft,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Clock,
   Hourglass,
@@ -12,6 +14,7 @@ import {
   MessageCircle,
   Send,
   Users,
+  X,
 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
@@ -25,6 +28,7 @@ import { useJob, useMyApplications } from '@/hooks/use-api'
 import { useAuth } from '@/lib/auth'
 import { CATEGORY_LABELS, formatDistance, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import type { JobStatus } from '@/types'
 
 export function JobDetailsPage() {
   const { id } = useParams()
@@ -34,6 +38,23 @@ export function JobDetailsPage() {
   const { data: job, isLoading, error } = useJob(jobId)
   const { data: myApps } = useMyApplications()
   const [pitchOpen, setPitchOpen] = useState(false)
+  const [lightbox, setLightbox] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (lightbox === null) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setLightbox(null)
+      if (e.key === 'ArrowLeft') setLightbox((i) => (i === null ? null : Math.max(0, i - 1)))
+      if (e.key === 'ArrowRight') setLightbox((i) => (i === null || !job ? null : Math.min(job.images.length - 1, i + 1)))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [lightbox, job])
 
   if (isLoading) {
     return (
@@ -95,6 +116,23 @@ export function JobDetailsPage() {
             </div>
           </div>
         </div>
+
+        {job.images.length > 0 && (
+          <section aria-labelledby="photos-heading" className="flex flex-col gap-3">
+            <h2 id="photos-heading" className="text-sm font-bold">Gig photos</h2>
+            <div className="grid grid-cols-2 gap-3 w-full" role="region" aria-label="Gig photos">
+              {job.images.map((src, i) => (
+                <img
+                  key={i}
+                  src={src}
+                  alt={`Gig photo ${i + 1}`}
+                  onClick={() => setLightbox(i)}
+                  className="cursor-pointer aspect-square w-full rounded-xl object-cover border border-border bg-secondary"
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         <dl className="grid grid-cols-1 gap-3 rounded-2xl border border-border bg-card p-4">
           <InfoRow icon={CalendarDays} label="Schedule" value={formatSchedule(job)} />
@@ -163,6 +201,7 @@ export function JobDetailsPage() {
           isOwner={isOwner}
           isGuest={!user}
           jobOpen={job.status === 'OPEN'}
+          jobStatus={job.status}
           applied={Boolean(myApplication)}
           jobId={job.id}
           onApply={() => setPitchOpen(true)}
@@ -170,6 +209,51 @@ export function JobDetailsPage() {
       </div>
 
       <PitchSheet job={job} open={pitchOpen} onOpenChange={setPitchOpen} />
+
+      {lightbox !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+          >
+            <X className="size-6" />
+          </button>
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-sm font-semibold">
+            {lightbox + 1} / {job.images.length}
+          </div>
+          {job.images.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous"
+                onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i === null ? null : Math.max(0, i - 1))) }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                <ChevronLeft className="size-6" />
+              </button>
+              <button
+                type="button"
+                aria-label="Next"
+                onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i === null ? null : Math.min(job.images.length - 1, i + 1))) }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                <ChevronRight className="size-6" />
+              </button>
+            </>
+          )}
+          <img
+            src={job.images[lightbox]}
+            alt={`Gig photo ${lightbox + 1}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[85vh] max-w-[95vw] object-contain"
+          />
+        </div>
+      )}
     </>
   )
 }
@@ -178,6 +262,7 @@ function StickyAction({
   isOwner,
   isGuest,
   jobOpen,
+  jobStatus,
   applied,
   jobId,
   onApply,
@@ -185,15 +270,16 @@ function StickyAction({
   isOwner: boolean
   isGuest: boolean
   jobOpen: boolean
+  jobStatus: JobStatus
   applied: boolean
   jobId: number
   onApply: () => void
 }) {
   const big = 'h-12 w-full text-base font-bold'
-  if (isOwner) {
+  if (isOwner && jobStatus === 'OPEN') {
     return (
-      <Link to="/my-gigs" className={cn(buttonVariants({ variant: 'outline' }), big)}>
-        Manage applicants
+      <Link to={`/jobs/${jobId}/edit`} className={cn(buttonVariants({ variant: 'outline' }), big)}>
+        Edit gig
       </Link>
     )
   }
