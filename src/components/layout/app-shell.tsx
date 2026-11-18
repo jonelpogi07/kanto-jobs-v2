@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router'
 import { Briefcase, Compass, MessageCircle, PlusCircle, UserRound } from 'lucide-react'
+import { InstallPwaPrompt } from '@/components/InstallPwaPrompt'
 import { useChatThreads } from '@/hooks/use-api'
 import { cn } from '@/lib/utils'
 
@@ -15,9 +16,10 @@ export function AppShell() {
   return (
     <div className="min-h-dvh bg-background sm:py-6">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col bg-background sm:min-h-[calc(100dvh-3rem)] sm:overflow-hidden sm:rounded-[2rem] sm:border sm:border-border sm:shadow-xl">
-        <main className="flex flex-1 flex-col pb-20">
+        <main className="flex flex-1 flex-col pb-[calc(5rem+env(safe-area-inset-bottom))]">
           <Outlet />
         </main>
+        <InstallPwaPrompt />
         <BottomNav />
       </div>
     </div>
@@ -31,7 +33,7 @@ function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur sm:absolute"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border bg-card/95 backdrop-blur pb-[env(safe-area-inset-bottom)] sm:absolute"
     >
       <ul className="grid grid-cols-5">
         {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
@@ -73,7 +75,7 @@ function BottomNav() {
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur">
       <div className="min-w-0">
         <h1 className="truncate text-lg font-extrabold text-foreground">{title}</h1>
         {subtitle ? <p className="truncate text-xs text-muted-foreground">{subtitle}</p> : null}

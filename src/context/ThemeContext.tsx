@@ -4,6 +4,8 @@ export type Theme = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'kanto-theme'
 const DARK_CLASS = 'dark'
+const THEME_COLOR_LIGHT = '#ffffff'
+const THEME_COLOR_DARK = '#0f172a'
 
 interface ThemeContextValue {
   theme: Theme
@@ -36,6 +38,18 @@ function computeResolved(theme: Theme): 'light' | 'dark' {
   return m ? m.matches ? 'dark' : 'light' : 'light'
 }
 
+function syncThemeColor(resolved: 'light' | 'dark') {
+  if (typeof document === 'undefined') return
+  const color = resolved === 'dark' ? THEME_COLOR_DARK : THEME_COLOR_LIGHT
+  let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.name = 'theme-color'
+    document.head.appendChild(meta)
+  }
+  meta.content = color
+}
+
 function applyTheme(theme: Theme): 'light' | 'dark' {
   const resolved = computeResolved(theme)
   if (typeof document !== 'undefined') {
@@ -43,6 +57,7 @@ function applyTheme(theme: Theme): 'light' | 'dark' {
     if (resolved === 'dark') root.classList.add(DARK_CLASS)
     else root.classList.remove(DARK_CLASS)
     root.style.colorScheme = resolved
+    syncThemeColor(resolved)
   }
   try {
     localStorage.setItem(STORAGE_KEY, theme)

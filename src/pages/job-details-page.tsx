@@ -62,7 +62,7 @@ export function JobDetailsPage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-2 py-2 backdrop-blur">
+      <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-2 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur">
         <Button variant="ghost" size="icon-lg" onClick={() => (history.length > 1 ? navigate(-1) : navigate('/explore'))}>
           <ArrowLeft aria-hidden="true" />
           <span className="sr-only">Back</span>

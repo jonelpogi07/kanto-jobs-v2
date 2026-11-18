@@ -95,11 +95,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
   html {
     -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+  button,
+  a,
+  [role='button'] {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -114,6 +123,10 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
 }
 
 @utility pb-safe {

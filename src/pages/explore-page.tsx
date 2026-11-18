@@ -23,7 +23,7 @@ export function ExplorePage() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-border bg-background/95 px-4 pt-4 pb-3 backdrop-blur">
+      <header className="sticky top-0 z-30 flex flex-col gap-3 border-b border-border bg-background/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+1rem)] backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link

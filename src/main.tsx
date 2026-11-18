@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { SWRConfig } from 'swr'
+import { registerSW } from 'virtual:pwa-register'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { AuthProvider } from '@/lib/auth'
@@ -8,6 +9,8 @@ import { LocationProvider } from '@/lib/location'
 import { App } from './App'
 import '@flaticon/flaticon-uicons/css/solid/rounded.css'
 import './index.css'
+
+registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
