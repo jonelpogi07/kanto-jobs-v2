@@ -48,6 +48,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'Taga-Dolores since birth. May sariling motor at tools. Sideline ko ang delivery at simpleng repairs tuwing weekends.',
     skills: ['Motorcycle Rider', 'Home Repair', 'Errands'],
     completedGigs: 31,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 220),
     password: DEMO_CREDENTIALS.password,
     contact: { phoneNumber: '09171234567', viberNumber: '09171234567', messengerUsername: 'juan.delacruz' },
@@ -66,6 +67,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'Freelance graphic designer and weekend tutor for Grade 3-6 Math.',
     skills: ['Graphic Design', 'Tutoring', 'Social Media'],
     completedGigs: 48,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 400),
     password: 'password123',
     contact: { phoneNumber: '09281112233', viberNumber: '09281112233', messengerUsername: 'maria.designs' },
@@ -84,6 +86,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'Licensed electrician, 12 years experience. Plumbing and carpentry din.',
     skills: ['Home Repair', 'Electrical', 'Plumbing'],
     completedGigs: 72,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 510),
     password: 'password123',
     contact: { phoneNumber: '09175556677', viberNumber: '09175556677', messengerUsername: null },
@@ -102,6 +105,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'Nanay ng tatlo, masipag maglinis at magluto. Available weekdays.',
     skills: ['Cleaning', 'Laundry', 'Cooking'],
     completedGigs: 22,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 150),
     password: 'password123',
     contact: { phoneNumber: '09398887766', viberNumber: null, messengerUsername: 'liza.manalo' },
@@ -120,6 +124,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'Rider ng Lalamove dati. Mabilis at maingat sa delivery.',
     skills: ['Motorcycle Rider', 'Delivery'],
     completedGigs: 14,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 60),
     password: 'password123',
     contact: { phoneNumber: '09451230987', viberNumber: '09451230987', messengerUsername: 'paoloreyes.rider' },
@@ -138,6 +143,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'Events host and photographer. Pwede rin sa setup at decorations.',
     skills: ['Events', 'Photography', 'Hosting'],
     completedGigs: 35,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 300),
     password: 'password123',
     contact: { phoneNumber: '09184443322', viberNumber: '09184443322', messengerUsername: 'angelacruz.events' },
@@ -156,6 +162,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'College student (BS Accountancy). Mabilis sa Excel at data entry. May motor din.',
     skills: ['Data Entry', 'Tutoring', 'Motorcycle Rider'],
     completedGigs: 9,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 45),
     password: 'password123',
     contact: { phoneNumber: '09207771122', viberNumber: null, messengerUsername: 'mark.aquino' },
@@ -174,6 +181,7 @@ export const SEED_USERS: SeedUser[] = [
     bio: 'May-ari ng maliit na sari-sari store. Madalas maghanap ng helper.',
     skills: ['Cleaning', 'Babysitting'],
     completedGigs: 7,
+    gigCoins: 2,
     createdAt: hoursAgo(24 * 90),
     password: 'password123',
     contact: { phoneNumber: '09363334455', viberNumber: '09363334455', messengerUsername: null },
@@ -679,6 +687,7 @@ export const SEED_REVIEWS: SeedReview[] = [
     createdAt: hoursAgo(24 * 34),
   },
 ]
+
 
 
 

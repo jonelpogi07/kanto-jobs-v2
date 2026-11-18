@@ -39,6 +39,7 @@ export interface UserDTO extends UserSummaryDTO {
   bio: string
   skills: string[]
   completedGigs: number
+  gigCoins: number
   createdAt: string
 }
 
@@ -107,6 +108,7 @@ export interface ChatThreadDTO {
   jobStatus: JobStatus
   applicationId: number
   applicationStatus: ApplicationStatus
+  posterId: number
   otherUser: UserSummaryDTO
   lastMessage: string | null
   lastMessageAt: string | null

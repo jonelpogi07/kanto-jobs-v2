@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { CheckCircle2, ChevronDown, Inbox, Loader2, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -16,15 +16,33 @@ import { UserAvatar } from '@/components/user-avatar'
 import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll } from '@/hooks/use-api'
 import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
 import type { ApplicationDTO, ApplicationStatus, JobPostDTO } from '@/types'
 
 export function MyGigsPage() {
+  const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'applied' ? 'applied' : 'posted'
   return (
     <>
-      <PageHeader title="My Gigs" />
+      <PageHeader
+        title="My Gigs"
+        action={
+          <button
+            type="button"
+            className="bg-amber-50 border border-amber-300 text-amber-800 px-3 py-1.5 rounded-full font-semibold text-sm flex items-center gap-1.5"
+          >
+            🪙 {user?.gigCoins ?? 2} GigCoins +
+          </button>
+        }
+      />
       <RequireAuth title="Log in to see your gigs">
-        <Tabs defaultValue="posted" className="gap-0">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })}
+          className="gap-0"
+        >
           <div className="px-4 pt-3">
             <TabsList className="grid h-11 w-full grid-cols-2">
               <TabsTrigger value="posted" className="text-sm font-semibold">
@@ -245,11 +263,21 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
 
 function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const refreshAll = useRefreshAll()
+  const { user, spendGigCoin } = useAuth()
   const [accepting, setAccepting] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [confirmDecline, setConfirmDecline] = useState(false)
+  const [confirmAccept, setConfirmAccept] = useState(false)
   const isAccepted = app.status === 'ACCEPTED'
   const dimmed = !isAccepted && job.status !== 'OPEN'
+
+  async function confirmAcceptFn() {
+    if ((user?.gigCoins ?? 0) < 1) return
+    const ok = await spendGigCoin(1)
+    if (!ok) return
+    setConfirmAccept(false)
+    await accept()
+  }
 
   async function accept() {
     setAccepting(true)
@@ -313,29 +341,31 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
       {isAccepted && app.applicantContact ? (
         <ContactBar contact={app.applicantContact} name={app.applicant.fullName} />
       ) : null}
-      <div className="flex gap-2">
-        <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 flex-1 font-bold')}>
+       {isAccepted ? (
+        <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
           <MessageCircle aria-hidden="true" />
           Message
         </Link>
-        {app.status === 'PENDING' && job.status === 'OPEN' ? (
-          <>
+      ) : app.status === 'PENDING' && job.status === 'OPEN' ? (
+        <>
+          <p className="text-xs text-muted-foreground">🔒 Accept with 1 GigCoin to unlock direct chat & contact details</p>
+          <div className="grid grid-cols-2 gap-2.5">
             <Button
               variant="destructive"
-              className="h-10 flex-1 font-bold"
+              className="h-10 font-bold"
               onClick={() => setConfirmDecline(true)}
               disabled={declining || accepting}
             >
               <X className="size-4" />
               Decline
             </Button>
-            <Button className="h-10 flex-1 font-bold" onClick={accept} disabled={accepting || declining}>
+            <Button className="h-10 font-bold" onClick={() => setConfirmAccept(true)} disabled={accepting || declining}>
               {accepting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />}
-              Accept
+              Accept (1 Coin)
             </Button>
-          </>
-        ) : null}
-      </div>
+          </div>
+        </>
+      ) : null}
 
       <ConfirmDialog
         open={confirmDecline}
@@ -348,6 +378,32 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
         loading={declining}
         onConfirm={decline}
       />
+
+      {confirmAccept && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-card p-5">
+            {(user?.gigCoins ?? 0) >= 1 ? (
+              <>
+                <p className="text-sm font-semibold">
+                  Accept {app.applicant.fullName} using 1 GigCoin? This assigns the gig, unlocks messaging, and reveals contact details.
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {user?.gigCoins ?? 0} GigCoins -&gt; {(user?.gigCoins ?? 0) - 1} GigCoins
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setConfirmAccept(false)}>Cancel</Button>
+                  <Button className="flex-1" onClick={confirmAcceptFn} disabled={accepting}>Confirm &amp; Spend 1 GigCoin</Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold">Insufficient GigCoins</p>
+                <Button className="mt-4 w-full" onClick={() => setConfirmAccept(false)}>Top Up GigCoins</Button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -436,33 +492,36 @@ function AppliedTab() {
                 </>
               ) : null}
               <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
-              {app.status === 'ACCEPTED' && app.posterContact && app.job ? (
-                app.job.status === 'COMPLETED' ? (
-                  <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                    <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
-                    Gig completed. Great work!
-                  </p>
-                ) : (
-                  <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
-                )
-              ) : null}
-              <div className="flex gap-2">
-                <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 flex-1 font-bold')}>
-                  <MessageCircle aria-hidden="true" />
-                  {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
-                </Link>
-                {app.status === 'PENDING' && (
-                  <Button
-                    variant="destructive"
-                    className="h-10 flex-1 font-bold"
-                    onClick={() => setCancelTarget(app)}
-                    disabled={cancellingId === app.id}
-                  >
-                    {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
-                    Cancel
-                  </Button>
-                )}
-              </div>
+               {app.status === 'ACCEPTED' && app.posterContact && app.job ? (
+                 app.job.status === 'COMPLETED' ? (
+                   <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                     <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+                     Gig completed. Great work!
+                   </p>
+                 ) : (
+                   <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
+                 )
+               ) : app.status === 'PENDING' ? (
+                 <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client accepts your application.</p>
+               ) : null}
+               <div className="flex gap-2">
+                 {app.status === 'PENDING' ? (
+                   <Button
+                     variant="destructive"
+                     className="h-10 w-full font-bold"
+                     onClick={() => setCancelTarget(app)}
+                     disabled={cancellingId === app.id}
+                   >
+                     {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+                     Cancel
+                   </Button>
+                 ) : (
+                   <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
+                     <MessageCircle aria-hidden="true" />
+                     {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
+                   </Link>
+                 )}
+               </div>
             </article>
           </li>
         ))}

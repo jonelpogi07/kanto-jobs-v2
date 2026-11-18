@@ -64,7 +64,11 @@ function load(): MockDb {
   const raw = localStorage.getItem(DB_KEY)
   if (raw) {
     try {
-      return JSON.parse(raw) as MockDb
+      const parsed = JSON.parse(raw) as MockDb
+      parsed.users = parsed.users.map((u: any) => ({ ...u, gigCoins: u.gigCoins ?? 2 }))
+      const acceptedIds = new Set(parsed.applications.filter((a) => a.status === 'ACCEPTED').map((a) => a.id))
+      parsed.messages = (parsed.messages ?? []).filter((m) => acceptedIds.has(m.applicationId))
+      return parsed
     } catch {
       localStorage.removeItem(DB_KEY)
     }
@@ -246,6 +250,7 @@ function toChatThread(app: SeedApplication, viewerId: number): ChatThreadDTO {
     jobStatus: job.status,
     applicationId: app.id,
     applicationStatus: app.status,
+    posterId: job.posterId,
     otherUser: toSummary(findUser(otherId)),
     lastMessage: last?.body ?? null,
     lastMessageAt: last?.createdAt ?? null,
@@ -361,6 +366,7 @@ export const mockApi: KantoApi = {
         bio: '',
         skills: [],
         completedGigs: 0,
+        gigCoins: 2,
         createdAt: now(),
         password,
         contact: { phoneNumber: isEmail ? '' : id, viberNumber: null, messengerUsername: null },
@@ -379,6 +385,13 @@ export const mockApi: KantoApi = {
     async me() {
       await delay(120)
       return toUserDTO(findUser(currentUserId()))
+    },
+    async updateGigCoins(delta: number) {
+      await delay(120)
+      const user = findUser(currentUserId())
+      user.gigCoins = Math.max(0, (user.gigCoins ?? 2) + delta)
+      save()
+      return toUserDTO(user)
     },
     async updateMe(req) {
       await delay()

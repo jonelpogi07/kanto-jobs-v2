@@ -53,6 +53,7 @@ const springBootApi: KantoApi = {
   },
   users: {
     me: () => data(http.get<UserDTO>('/users/me')),
+    updateGigCoins: (delta: number) => data(http.put<UserDTO>('/users/me/gig-coins', { delta })),
     updateMe: (req) => data(http.put<UserDTO>('/users/me', req)),
     getById: (id) => data(http.get<UserDTO>(`/users/${id}`)),
     reviews: (id, page = 0, size = 20) =>

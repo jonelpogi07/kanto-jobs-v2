@@ -35,6 +35,7 @@ export interface KantoApi {
   users: {
     /** GET /users/me */
     me(): Promise<UserDTO>
+    updateGigCoins(delta: number): Promise<UserDTO>
     /** PUT /users/me */
     updateMe(req: UpdateUserRequest): Promise<UserDTO>
     /** GET /users/{id} */

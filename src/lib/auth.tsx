@@ -10,6 +10,8 @@ interface AuthContextValue {
   isAuthenticated: boolean
   signIn: (response: AuthResponse) => Promise<void>
   signOut: () => void
+  addGigCoins: (amount: number) => Promise<void>
+  spendGigCoin: (amount?: number) => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -45,6 +47,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void mutate(() => true, undefined, { revalidate: false })
   }, [mutate])
 
+  const addGigCoins = useCallback(
+    async (amount: number) => {
+      if (!token) return
+      const updated = await api.users.updateGigCoins(amount)
+      await mutate([ME_KEY, token], updated, { revalidate: false })
+    },
+    [token, mutate],
+  )
+
+  const spendGigCoin = useCallback(
+    async (amount = 1) => {
+      if (!token) return false
+      if ((user?.gigCoins ?? 0) < amount) return false
+      const updated = await api.users.updateGigCoins(-amount)
+      await mutate([ME_KEY, token], updated, { revalidate: false })
+      return true
+    },
+    [token, user, mutate],
+  )
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: token ? (user ?? null) : null,
@@ -52,8 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(token && user),
       signIn,
       signOut,
+      addGigCoins,
+      spendGigCoin,
     }),
-    [token, user, isLoading, signIn, signOut],
+    [token, user, isLoading, signIn, signOut, addGigCoins, spendGigCoin],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -184,14 +184,18 @@ export function JobDetailsPage() {
             <p className="text-sm text-muted-foreground italic">{`"${myApplication.pitch}"`}</p>
             {myApplication.status === 'ACCEPTED' && myApplication.posterContact ? (
               <ContactBar contact={myApplication.posterContact} name={job.poster.fullName} />
+            ) : myApplication.status !== 'ACCEPTED' ? (
+              <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client accepts your application.</p>
             ) : null}
-            <Link
-              to={`/messages/${myApplication.id}`}
-              className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}
-            >
-              <MessageCircle aria-hidden="true" />
-              {`Message ${job.poster.fullName.split(' ')[0]}`}
-            </Link>
+            {myApplication.status === 'ACCEPTED' ? (
+              <Link
+                to={`/messages/${myApplication.id}`}
+                className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}
+              >
+                <MessageCircle aria-hidden="true" />
+                {`Message ${job.poster.fullName.split(' ')[0]}`}
+              </Link>
+            ) : null}
           </section>
         ) : null}
       </article>

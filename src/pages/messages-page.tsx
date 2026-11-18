@@ -21,6 +21,7 @@ export function MessagesPage() {
 
 function ThreadList() {
   const { data: threads, isLoading } = useChatThreads()
+  const visible = (threads ?? []).filter((t) => t.applicationStatus === 'ACCEPTED')
 
   if (isLoading && !threads) {
     return (
@@ -31,7 +32,7 @@ function ThreadList() {
     )
   }
 
-  if (!threads?.length) {
+  if (!visible.length) {
     return (
       <div className="mx-4 mt-4 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-6 py-12 text-center">
         <MessageCircle className="size-8 text-muted-foreground" aria-hidden="true" />
@@ -48,7 +49,7 @@ function ThreadList() {
 
   return (
     <ul className="flex flex-col pb-6">
-      {threads.map((thread) => (
+      {visible.map((thread) => (
         <li key={thread.id}>
           <ThreadRow thread={thread} />
         </li>

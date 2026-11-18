@@ -91,6 +91,8 @@ function ChatConversation() {
     }
   }
 
+  const isLocked = thread.applicationStatus !== 'ACCEPTED'
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/95 px-2 pb-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] backdrop-blur">
@@ -117,6 +119,13 @@ function ChatConversation() {
           {thread.jobTitle}
         </Link>
       </div>
+      {isLocked ? (
+        <div className="border-b border-border bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
+          {user && user.id === thread.posterId
+            ? 'Accept this applicant in My Gigs (1 GigCoin) to unlock messaging and contact details.'
+            : 'Waiting for the client to accept your application to unlock direct messaging and contact details.'}
+        </div>
+      ) : null}
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {messagesLoading && !messages ? (
@@ -162,13 +171,14 @@ function ChatConversation() {
             aria-label="Message"
             maxLength={2000}
             autoComplete="off"
-            className="h-11 flex-1 rounded-full border-transparent bg-secondary px-4 text-base focus-visible:border-ring"
+            disabled={isLocked}
+            className="h-11 flex-1 rounded-full border-transparent bg-secondary px-4 text-base focus-visible:border-ring disabled:opacity-50"
           />
           <Button
             type="submit"
             size="icon-lg"
             className="size-11 shrink-0 rounded-full"
-            disabled={!draft.trim() || sending}
+            disabled={isLocked || !draft.trim() || sending}
             aria-label="Send message"
           >
             {sending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
