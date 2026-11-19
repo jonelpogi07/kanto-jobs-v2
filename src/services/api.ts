@@ -74,6 +74,7 @@ const springBootApi: KantoApi = {
   applications: {
     mine: (page = 0, size = 20) =>
       data(http.get<Page<ApplicationDTO>>('/applications/mine', { params: { page, size } })),
+    screen: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/screen`)),
     accept: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/accept`)),
     decline: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/decline`)),
     cancel: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/cancel`)),

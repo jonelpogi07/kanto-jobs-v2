@@ -91,7 +91,7 @@ function ChatConversation() {
     }
   }
 
-  const isLocked = thread.applicationStatus !== 'ACCEPTED'
+  const isLocked = thread.applicationStatus !== 'SCREENING' && thread.applicationStatus !== 'ACCEPTED'
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -122,8 +122,8 @@ function ChatConversation() {
       {isLocked ? (
         <div className="border-b border-border bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
           {user && user.id === thread.posterId
-            ? 'Accept this applicant in My Gigs (1 GigCoin) to unlock messaging and contact details.'
-            : 'Waiting for the client to accept your application to unlock direct messaging and contact details.'}
+            ? 'Screen this applicant in My Gigs (1 GigCoin) to unlock messaging and contact details.'
+            : 'Waiting for the client to screen or accept your application to unlock direct messaging and contact details.'}
         </div>
       ) : null}
 

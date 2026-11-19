@@ -182,12 +182,12 @@ export function JobDetailsPage() {
               <ApplicationStatusBadge status={myApplication.status} />
             </div>
             <p className="text-sm text-muted-foreground italic">{`"${myApplication.pitch}"`}</p>
-            {myApplication.status === 'ACCEPTED' && myApplication.posterContact ? (
+            {(myApplication.status === 'SCREENING' || myApplication.status === 'ACCEPTED') && myApplication.posterContact ? (
               <ContactBar contact={myApplication.posterContact} name={job.poster.fullName} />
-            ) : myApplication.status !== 'ACCEPTED' ? (
-              <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client accepts your application.</p>
+            ) : myApplication.status !== 'SCREENING' && myApplication.status !== 'ACCEPTED' ? (
+              <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client screens or accepts your application.</p>
             ) : null}
-            {myApplication.status === 'ACCEPTED' ? (
+            {myApplication.status === 'SCREENING' || myApplication.status === 'ACCEPTED' ? (
               <Link
                 to={`/messages/${myApplication.id}`}
                 className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}

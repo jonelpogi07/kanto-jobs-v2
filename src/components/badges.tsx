@@ -67,6 +67,7 @@ export function JobStatusBadge({ status }: { status: JobStatus }) {
 
 const APP_STATUS_STYLES: Record<ApplicationStatus, string> = {
   PENDING: 'bg-secondary text-foreground',
+  SCREENING: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
   ACCEPTED: 'bg-success text-white',
   REJECTED: 'bg-secondary text-muted-foreground',
   CANCELLED: 'bg-secondary text-muted-foreground',

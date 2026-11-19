@@ -21,7 +21,9 @@ export function MessagesPage() {
 
 function ThreadList() {
   const { data: threads, isLoading } = useChatThreads()
-  const visible = (threads ?? []).filter((t) => t.applicationStatus === 'ACCEPTED')
+  const visible = (threads ?? []).filter(
+    (t) => t.applicationStatus === 'SCREENING' || t.applicationStatus === 'ACCEPTED',
+  )
 
   if (isLoading && !threads) {
     return (

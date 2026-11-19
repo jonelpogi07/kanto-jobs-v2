@@ -19,7 +19,7 @@ export type JobTiming = 'URGENT' | 'SCHEDULED' | 'FLEXIBLE'
 
 export type JobStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
 
-export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
+export type ApplicationStatus = 'PENDING' | 'SCREENING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
 
 /** Lightweight user projection embedded in jobs, applications and reviews. */
 export interface UserSummaryDTO {
@@ -43,7 +43,7 @@ export interface UserDTO extends UserSummaryDTO {
   createdAt: string
 }
 
-/** Only returned by the API once an application has been ACCEPTED. */
+/** Only returned by the API once an application has been SCREENING or ACCEPTED. */
 export interface ContactInfoDTO {
   phoneNumber: string
   viberNumber: string | null
@@ -90,9 +90,9 @@ export interface ApplicationDTO {
   applicant: ApplicantDTO
   pitch: string
   status: ApplicationStatus
-  /** Applicant contact, visible to the poster when ACCEPTED. */
+  /** Applicant contact, visible to the poster when SCREENING or ACCEPTED. */
   applicantContact: ContactInfoDTO | null
-  /** Poster contact, visible to the applicant when ACCEPTED. */
+  /** Poster contact, visible to the applicant when SCREENING or ACCEPTED. */
   posterContact: ContactInfoDTO | null
   createdAt: string
 }

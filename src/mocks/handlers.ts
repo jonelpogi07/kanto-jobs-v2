@@ -66,7 +66,9 @@ function load(): MockDb {
     try {
       const parsed = JSON.parse(raw) as MockDb
       parsed.users = parsed.users.map((u: any) => ({ ...u, gigCoins: u.gigCoins ?? 2 }))
-      const acceptedIds = new Set(parsed.applications.filter((a) => a.status === 'ACCEPTED').map((a) => a.id))
+      const acceptedIds = new Set(
+        parsed.applications.filter((a) => a.status === 'ACCEPTED' || a.status === 'SCREENING').map((a) => a.id),
+      )
       parsed.messages = (parsed.messages ?? []).filter((m) => acceptedIds.has(m.applicationId))
       return parsed
     } catch {
@@ -181,7 +183,7 @@ function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: bool
   const job = findJob(app.jobId)
   const applicant = findUser(app.applicantId)
   const poster = findUser(job.posterId)
-  const accepted = app.status === 'ACCEPTED'
+  const contactUnlocked = app.status === 'SCREENING' || app.status === 'ACCEPTED'
   return {
     id: app.id,
     jobId: app.jobId,
@@ -189,8 +191,8 @@ function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: bool
     applicant: toApplicant(applicant),
     pitch: app.pitch,
     status: app.status,
-    applicantContact: accepted && viewerId === job.posterId ? { ...applicant.contact } : null,
-    posterContact: accepted && viewerId === app.applicantId ? { ...poster.contact } : null,
+    applicantContact: contactUnlocked && viewerId === job.posterId ? { ...applicant.contact } : null,
+    posterContact: contactUnlocked && viewerId === app.applicantId ? { ...poster.contact } : null,
     createdAt: app.createdAt,
   }
 }
@@ -526,9 +528,9 @@ export const mockApi: KantoApi = {
       }
       job.status = 'CANCELLED'
       job.updatedAt = now()
-      // Reject all pending applications
+      // Reject all pending and screening applications
       for (const app of db.applications) {
-        if (app.jobId === id && app.status === 'PENDING') app.status = 'REJECTED'
+        if (app.jobId === id && (app.status === 'PENDING' || app.status === 'SCREENING')) app.status = 'REJECTED'
       }
       save()
       return toJobDTO(job)
@@ -605,6 +607,19 @@ export const mockApi: KantoApi = {
         size,
       )
     },
+    async screen(id) {
+      await delay()
+      const userId = currentUserId()
+      const app = db.applications.find((a) => a.id === id)
+      if (!app) throw new ApiError(404, 'Application not found.')
+      const job = findJob(app.jobId)
+      if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can screen applicants.')
+      if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
+      if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be screened.')
+      app.status = 'SCREENING'
+      save()
+      return toApplicationDTO(app, userId, false)
+    },
     async accept(id) {
       await delay()
       const userId = currentUserId()
@@ -613,8 +628,13 @@ export const mockApi: KantoApi = {
       const job = findJob(app.jobId)
       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can accept applicants.')
       if (job.status !== 'OPEN') throw new ApiError(409, 'An applicant was already accepted.')
+      if (app.status !== 'PENDING' && app.status !== 'SCREENING') {
+        throw new ApiError(409, 'Only pending or screening applications can be accepted.')
+      }
       for (const other of db.applications) {
-        if (other.jobId === job.id && other.id !== id && other.status === 'PENDING') other.status = 'REJECTED'
+        if (other.jobId === job.id && other.id !== id && (other.status === 'PENDING' || other.status === 'SCREENING')) {
+          other.status = 'REJECTED'
+        }
       }
       app.status = 'ACCEPTED'
       job.status = 'IN_PROGRESS'
@@ -629,7 +649,9 @@ export const mockApi: KantoApi = {
       if (!app) throw new ApiError(404, 'Application not found.')
       const job = findJob(app.jobId)
       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can decline applicants.')
-      if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be declined.')
+      if (app.status !== 'PENDING' && app.status !== 'SCREENING') {
+        throw new ApiError(409, 'Only pending or screening applications can be declined.')
+      }
       app.status = 'REJECTED'
       save()
       return toApplicationDTO(app, userId, false)
@@ -641,7 +663,9 @@ export const mockApi: KantoApi = {
       if (!app) throw new ApiError(404, 'Application not found.')
       const job = findJob(app.jobId)
       if (app.applicantId !== userId) throw new ApiError(403, 'Only the applicant can cancel their application.')
-      if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be cancelled.')
+      if (app.status !== 'PENDING' && app.status !== 'SCREENING') {
+        throw new ApiError(409, 'Only pending or screening applications can be cancelled.')
+      }
       if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
       app.status = 'CANCELLED'
       save()
@@ -679,6 +703,9 @@ export const mockApi: KantoApi = {
       const userId = currentUserId()
       const app = findApplication(threadId)
       assertChatParticipant(app, userId)
+      if (app.status !== 'SCREENING' && app.status !== 'ACCEPTED') {
+        throw new ApiError(403, 'Screen or accept this applicant before messaging.')
+      }
       const text = body.trim()
       if (!text) throw new ApiError(400, 'Message cannot be empty.')
       if (text.length > 2000) throw new ApiError(400, 'Message is too long.')

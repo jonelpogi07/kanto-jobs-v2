@@ -264,19 +264,37 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
 function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const refreshAll = useRefreshAll()
   const { user, spendGigCoin } = useAuth()
+  const [screening, setScreening] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [confirmDecline, setConfirmDecline] = useState(false)
-  const [confirmAccept, setConfirmAccept] = useState(false)
+  const [confirmScreen, setConfirmScreen] = useState(false)
+  const isScreening = app.status === 'SCREENING'
   const isAccepted = app.status === 'ACCEPTED'
-  const dimmed = !isAccepted && job.status !== 'OPEN'
+  const contactUnlocked = isScreening || isAccepted
+  const dimmed = !contactUnlocked && job.status !== 'OPEN'
 
-  async function confirmAcceptFn() {
+  async function confirmScreenFn() {
     if ((user?.gigCoins ?? 0) < 1) return
     const ok = await spendGigCoin(1)
     if (!ok) return
-    setConfirmAccept(false)
-    await accept()
+    setConfirmScreen(false)
+    await screen()
+  }
+
+  async function screen() {
+    setScreening(true)
+    try {
+      await api.applications.screen(app.id)
+      toast.success(`Screening ${app.applicant.fullName.split(' ')[0]}`, {
+        description: 'Direct messaging and contact details are now unlocked.',
+      })
+      await refreshAll()
+    } catch (e) {
+      toast.error('Could not screen applicant', { description: e instanceof Error ? e.message : 'Please try again.' })
+    } finally {
+      setScreening(false)
+    }
   }
 
   async function accept() {
@@ -338,67 +356,104 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
           ))}
         </div>
       ) : null}
-      {isAccepted && app.applicantContact ? (
+      {contactUnlocked && app.applicantContact ? (
         <ContactBar contact={app.applicantContact} name={app.applicant.fullName} />
       ) : null}
-       {isAccepted ? (
+      {contactUnlocked ? (
         <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
           <MessageCircle aria-hidden="true" />
           Message
         </Link>
       ) : app.status === 'PENDING' && job.status === 'OPEN' ? (
         <>
-          <p className="text-xs text-muted-foreground">🔒 Accept with 1 GigCoin to unlock direct chat & contact details</p>
-          <div className="grid grid-cols-2 gap-2.5">
+          <p className="text-xs text-muted-foreground">
+            🔒 Spend 1 GigCoin to screen this applicant and unlock chat &amp; contact details
+          </p>
+          <div className="grid grid-cols-[1fr_1.35fr] gap-2">
             <Button
               variant="destructive"
-              className="h-10 font-bold"
+              className="h-10 px-3 text-xs font-bold whitespace-nowrap sm:text-sm"
               onClick={() => setConfirmDecline(true)}
-              disabled={declining || accepting}
+              disabled={declining || screening}
             >
-              <X className="size-4" />
-              Decline
+              <X className="size-4 shrink-0" />
+              Reject
             </Button>
-            <Button className="h-10 font-bold" onClick={() => setConfirmAccept(true)} disabled={accepting || declining}>
-              {accepting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <UserCheck aria-hidden="true" />}
-              Accept (1 Coin)
+            <Button
+              className="h-10 px-3 text-xs font-bold whitespace-nowrap sm:text-sm"
+              onClick={() => setConfirmScreen(true)}
+              disabled={screening || declining}
+            >
+              {screening ? (
+                <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+              ) : (
+                <UserCheck className="size-4 shrink-0" aria-hidden="true" />
+              )}
+              Screen (1 Coin)
             </Button>
           </div>
         </>
+      ) : null}
+
+      {isScreening ? (
+        <div className="grid grid-cols-[1fr_1.35fr] gap-2">
+          <Button
+            variant="destructive"
+            className="h-10 px-3 text-xs font-bold whitespace-nowrap sm:text-sm"
+            onClick={() => setConfirmDecline(true)}
+            disabled={declining || accepting}
+          >
+            <X className="size-4 shrink-0" />
+            Reject
+          </Button>
+          <Button
+            className="h-10 bg-success px-3 text-xs font-bold whitespace-nowrap hover:bg-success/90 sm:text-sm"
+            onClick={accept}
+            disabled={accepting || declining}
+          >
+            {accepting ? (
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+            ) : (
+              <UserCheck className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            Accept Applicant
+          </Button>
+        </div>
       ) : null}
 
       <ConfirmDialog
         open={confirmDecline}
         onOpenChange={setConfirmDecline}
         intent="destructive"
-        title={`Decline ${app.applicant.fullName.split(' ')[0]}'s pitch?`}
+        title={`Reject ${app.applicant.fullName.split(' ')[0]}'s pitch?`}
         description="They will be notified and removed from your active applicants for this gig."
-        confirmLabel="Decline applicant"
+        confirmLabel="Reject applicant"
         cancelLabel="Keep for now"
         loading={declining}
         onConfirm={decline}
       />
 
-      {confirmAccept && (
+      {confirmScreen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-card p-5">
             {(user?.gigCoins ?? 0) >= 1 ? (
               <>
                 <p className="text-sm font-semibold">
-                  Accept {app.applicant.fullName} using 1 GigCoin? This assigns the gig, unlocks messaging, and reveals contact details.
+                  Screen {app.applicant.fullName} using 1 GigCoin? This unlocks direct messaging and contact details so you
+                  can interview them before accepting.
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground">
                   {user?.gigCoins ?? 0} GigCoins -&gt; {(user?.gigCoins ?? 0) - 1} GigCoins
                 </p>
                 <div className="mt-4 flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setConfirmAccept(false)}>Cancel</Button>
-                  <Button className="flex-1" onClick={confirmAcceptFn} disabled={accepting}>Confirm &amp; Spend 1 GigCoin</Button>
+                  <Button variant="outline" className="flex-1" onClick={() => setConfirmScreen(false)}>Cancel</Button>
+                  <Button className="flex-1" onClick={confirmScreenFn} disabled={screening}>Confirm &amp; Spend 1 GigCoin</Button>
                 </div>
               </>
             ) : (
               <>
                 <p className="text-sm font-semibold">Insufficient GigCoins</p>
-                <Button className="mt-4 w-full" onClick={() => setConfirmAccept(false)}>Top Up GigCoins</Button>
+                <Button className="mt-4 w-full" onClick={() => setConfirmScreen(false)}>Top Up GigCoins</Button>
               </>
             )}
           </div>
@@ -459,6 +514,7 @@ function AppliedTab() {
           <SelectContent>
             <SelectItem value="ALL">All</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="SCREENING">Screening</SelectItem>
             <SelectItem value="ACCEPTED">Accepted</SelectItem>
             <SelectItem value="REJECTED">Declined</SelectItem>
             <SelectItem value="CANCELLED">Cancelled</SelectItem>
@@ -492,7 +548,7 @@ function AppliedTab() {
                 </>
               ) : null}
               <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
-               {app.status === 'ACCEPTED' && app.posterContact && app.job ? (
+               {(app.status === 'SCREENING' || app.status === 'ACCEPTED') && app.posterContact && app.job ? (
                  app.job.status === 'COMPLETED' ? (
                    <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                      <Star className="size-4 fill-amber-400 text-amber-400" aria-hidden="true" />
@@ -502,10 +558,16 @@ function AppliedTab() {
                    <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
                  )
                ) : app.status === 'PENDING' ? (
-                 <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client accepts your application.</p>
+                 <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client screens or accepts your application.</p>
                ) : null}
                <div className="flex gap-2">
-                 {app.status === 'PENDING' ? (
+                 {app.status === 'SCREENING' || app.status === 'ACCEPTED' ? (
+                   <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
+                     <MessageCircle aria-hidden="true" />
+                     {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
+                   </Link>
+                 ) : null}
+                 {app.status === 'PENDING' || app.status === 'SCREENING' ? (
                    <Button
                      variant="destructive"
                      className="h-10 w-full font-bold"
@@ -515,12 +577,7 @@ function AppliedTab() {
                      {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
                      Cancel
                    </Button>
-                 ) : (
-                   <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
-                     <MessageCircle aria-hidden="true" />
-                     {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
-                   </Link>
-                 )}
+                 ) : null}
                </div>
             </article>
           </li>
