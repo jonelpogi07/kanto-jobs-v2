@@ -40,6 +40,7 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
 }
 
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  INVITED: 'Invited',
   PENDING: 'Pending',
   SCREENING: 'Screening',
   ACCEPTED: 'Accepted',

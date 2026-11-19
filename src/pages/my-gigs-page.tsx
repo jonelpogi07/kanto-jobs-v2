@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
-import { CheckCircle2, ChevronDown, Inbox, Loader2, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, Inbox, Loader2, Lock, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -135,6 +135,21 @@ function PostedTab() {
   )
 }
 
+function applicantRank(app: ApplicationDTO) {
+  switch (app.status) {
+    case 'INVITED':
+      return 0
+    case 'ACCEPTED':
+      return 1
+    case 'SCREENING':
+      return 2
+    case 'PENDING':
+      return 3
+    default:
+      return 4
+  }
+}
+
 function PostedJobCard({ job }: { job: JobPostDTO }) {
   const [expanded, setExpanded] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
@@ -142,7 +157,9 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, expanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
-  const visibleApps = (applications ?? []).filter((a) => a.status !== 'REJECTED')
+  const visibleApps = (applications ?? [])
+    .filter((a) => a.status !== 'REJECTED')
+    .sort((a, b) => applicantRank(a) - applicantRank(b) || b.createdAt.localeCompare(a.createdAt))
   const panelId = `applicants-${job.id}`
   const refreshAll = useRefreshAll()
   const canCancel = job.status === 'OPEN' || job.status === 'IN_PROGRESS'
@@ -218,7 +235,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
             </p>
           ) : (
             <>
-              {(accepted ? [accepted, ...visibleApps.filter((a) => a !== accepted)] : visibleApps).map((app) => (
+              {visibleApps.map((app) => (
                 <ApplicantRow key={app.id} app={app} job={job} />
               ))}
               {job.status === 'IN_PROGRESS' && accepted ? (
@@ -269,6 +286,7 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const [declining, setDeclining] = useState(false)
   const [confirmDecline, setConfirmDecline] = useState(false)
   const [confirmScreen, setConfirmScreen] = useState(false)
+  const isInvited = app.status === 'INVITED'
   const isScreening = app.status === 'SCREENING'
   const isAccepted = app.status === 'ACCEPTED'
   const contactUnlocked = isScreening || isAccepted
@@ -364,6 +382,30 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
           <MessageCircle aria-hidden="true" />
           Message
         </Link>
+      ) : isInvited && job.status === 'OPEN' ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-muted-foreground">
+             🔒 Invite is still not accepted by the Gigster, please wait.
+          </p>
+           <div className="grid grid-cols-[1fr_1.35fr] gap-2">
+             <Button
+               variant="destructive"
+               className="h-10 px-3 text-xs font-bold whitespace-nowrap sm:text-sm"
+               onClick={() => setConfirmDecline(true)}
+               disabled={declining}
+             >
+               <X className="size-4 shrink-0" />
+               Cancel Invite
+             </Button>
+             <Button
+               className="h-10 px-3 text-xs font-bold whitespace-nowrap sm:text-sm bg-muted text-muted-foreground"
+               disabled
+             >
+               <Lock className="size-4 shrink-0" />
+               Screen (1 Coin)
+             </Button>
+           </div>
+        </div>
       ) : app.status === 'PENDING' && job.status === 'OPEN' ? (
         <>
           <p className="text-xs text-muted-foreground">
@@ -425,10 +467,12 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
         open={confirmDecline}
         onOpenChange={setConfirmDecline}
         intent="destructive"
-        title={`Reject ${app.applicant.fullName.split(' ')[0]}'s pitch?`}
-        description="They will be notified and removed from your active applicants for this gig."
-        confirmLabel="Reject applicant"
-        cancelLabel="Keep for now"
+        title={isInvited ? `Cancel invitation to ${app.applicant.fullName.split(' ')[0]}?` : `Reject ${app.applicant.fullName.split(' ')[0]}'s pitch?`}
+        description={isInvited
+          ? 'They will be notified that the invitation has been cancelled.'
+          : 'They will be notified and removed from your active applicants for this gig.'}
+        confirmLabel={isInvited ? 'Cancel invitation' : 'Reject applicant'}
+        cancelLabel={isInvited ? 'Keep invitation' : 'Keep for now'}
         loading={declining}
         onConfirm={decline}
       />
@@ -469,9 +513,15 @@ function AppliedTab() {
   const navigate = useNavigate()
   const [cancelTarget, setCancelTarget] = useState<ApplicationDTO | null>(null)
   const [cancellingId, setCancellingId] = useState<number | null>(null)
+  const [responding, setResponding] = useState<{ id: number; accept: boolean } | null>(null)
   const [filter, setFilter] = useState<'ALL' | ApplicationStatus>('ALL')
   const apps = data?.content ?? []
-  const filteredApps = filter === 'ALL' ? apps : apps.filter((a) => a.status === filter)
+  const filteredApps =
+    filter === 'ALL'
+      ? apps
+      : filter === 'PENDING'
+        ? apps.filter((a) => a.status === 'PENDING' || a.status === 'INVITED')
+        : apps.filter((a) => a.status === filter)
   const cancelTargetTitle = useMemo(() => cancelTarget?.job?.title ?? 'this gig', [cancelTarget])
 
   if (isLoading) return <Loading />
@@ -500,6 +550,25 @@ function AppliedTab() {
     }
   }
 
+  async function respond(app: ApplicationDTO, accept: boolean) {
+    setResponding({ id: app.id, accept })
+    try {
+      await api.applications.respondToInvitation(app.id, accept)
+      toast.success(accept ? 'Invitation accepted' : 'Invitation declined', {
+        description: accept
+          ? 'You are now in the applicant list. The client can screen or accept you next.'
+          : 'You have been removed from this gig.',
+      })
+      await refreshAll()
+    } catch (e) {
+      toast.error(accept ? 'Could not accept invitation' : 'Could not decline invitation', {
+        description: e instanceof Error ? e.message : 'Please try again.',
+      })
+    } finally {
+      setResponding(null)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
       <div className="flex items-center justify-between">
@@ -513,6 +582,7 @@ function AppliedTab() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All</SelectItem>
+            <SelectItem value="INVITED">Invited</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="SCREENING">Screening</SelectItem>
             <SelectItem value="ACCEPTED">Accepted</SelectItem>
@@ -557,10 +627,46 @@ function AppliedTab() {
                  ) : (
                    <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
                  )
+               ) : app.status === 'INVITED' ? (
+                 <>
+                   <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                     The client invited you to apply for this gig.
+                   </p>
+                   <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client screens or accepts you.</p>
+                 </>
                ) : app.status === 'PENDING' ? (
                  <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client screens or accepts your application.</p>
                ) : null}
                <div className="flex gap-2">
+                 {app.status === 'INVITED' ? (
+                   <div className="grid w-full grid-cols-2 gap-2">
+                     <Button
+                       variant="destructive"
+                       className="h-10 font-bold"
+                       onClick={() => respond(app, false)}
+                       disabled={responding?.id === app.id}
+                     >
+                       {responding?.id === app.id && !responding.accept ? (
+                         <Loader2 className="animate-spin" aria-hidden="true" />
+                       ) : (
+                         <X className="size-4" />
+                       )}
+                       Decline
+                     </Button>
+                     <Button
+                       className="h-10 font-bold"
+                       onClick={() => respond(app, true)}
+                       disabled={responding?.id === app.id}
+                     >
+                       {responding?.id === app.id && responding.accept ? (
+                         <Loader2 className="animate-spin" aria-hidden="true" />
+                       ) : (
+                         <UserCheck className="size-4" />
+                       )}
+                       Accept Invitation
+                     </Button>
+                   </div>
+                 ) : null}
                  {app.status === 'SCREENING' || app.status === 'ACCEPTED' ? (
                    <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
                      <MessageCircle aria-hidden="true" />

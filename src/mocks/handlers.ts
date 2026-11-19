@@ -561,10 +561,73 @@ export const mockApi: KantoApi = {
         status: 'PENDING',
         createdAt: now(),
       }
-      db.applications.push(app)
-      save()
-      return toApplicationDTO(app, userId, true)
-    },
+       db.applications.push(app)
+       save()
+       return toApplicationDTO(app, userId, true)
+     },
+     async inviteGigsterToGig(gigId, gigster) {
+       await delay()
+       const userId = currentUserId()
+       const job = findJob(gigId)
+       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can invite gigsters.')
+       if (job.status !== 'OPEN') throw new ApiError(409, 'Only open gigs can receive invitations.')
+
+       // The Explore feed's gigster cards are not always backed by a stored user
+       // (their local ids can collide with unrelated accounts), so resolve by
+       // name and create a full applicant record when needed. This guarantees
+       // the invited gigster renders with the correct name, avatar, rating,
+       // barangay and skills in the poster's applicants list.
+       const name = gigster.name.trim()
+       let applicant = db.users.find((u) => u.fullName.toLowerCase() === name.toLowerCase())
+       if (!applicant) {
+         applicant = {
+           id: nextId(db.users),
+           fullName: name,
+           avatarUrl: null,
+           barangay: gigster.barangay?.trim() || job.barangay,
+           city: job.city,
+           phoneVerified: true,
+           ratingAverage: gigster.rating ?? 0,
+           ratingCount: gigster.completedGigs ?? 0,
+           email: null,
+           phoneNumber: gigster.phone?.trim() || null,
+           bio: gigster.bio?.trim() || '',
+           skills: [...(gigster.skills ?? [])],
+           completedGigs: gigster.completedGigs ?? 0,
+           gigCoins: 2,
+           createdAt: now(),
+           password: 'password123',
+           contact: {
+             phoneNumber: gigster.phone?.trim() || '',
+             viberNumber: null,
+             messengerUsername: null,
+           },
+         }
+         db.users.push(applicant)
+       }
+
+       const existing = db.applications.find((a) => a.jobId === gigId && a.applicantId === applicant.id)
+       if (existing) {
+         if (existing.status === 'REJECTED' || existing.status === 'CANCELLED') {
+           existing.status = 'INVITED'
+           existing.pitch = 'Invited by client to apply for this gig.'
+           existing.createdAt = now()
+           save()
+         }
+         return toApplicationDTO(existing, userId, false)
+       }
+       const app: SeedApplication = {
+         id: nextId(db.applications),
+         jobId: gigId,
+         applicantId: applicant.id,
+         pitch: 'Invited by client to apply for this gig.',
+         status: 'INVITED',
+         createdAt: now(),
+       }
+       db.applications.push(app)
+       save()
+       return toApplicationDTO(app, userId, false)
+     },
     async review(jobId, { rating, comment }) {
       await delay()
       const userId = currentUserId()
@@ -667,10 +730,18 @@ export const mockApi: KantoApi = {
         throw new ApiError(409, 'Only pending or screening applications can be cancelled.')
       }
       if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
-      app.status = 'CANCELLED'
-      save()
-      return toApplicationDTO(app, userId, false)
-    },
+       app.status = 'CANCELLED'
+       save()
+       return toApplicationDTO(app, userId, false)
+     },
+     async respondToInvitation(id, accept) {
+       await delay()
+       const app = db.applications.find((a) => a.id === id)
+       if (!app) throw new ApiError(404, 'Application not found.')
+       app.status = accept ? 'PENDING' : 'REJECTED'
+       save()
+       return toApplicationDTO(app, currentUserId(), false)
+     },
   },
 
   chat: {

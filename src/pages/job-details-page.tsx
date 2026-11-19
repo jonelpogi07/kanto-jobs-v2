@@ -18,16 +18,18 @@ import {
 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { ApplicationStatusBadge, JobStatusBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
 import { PitchSheet } from '@/components/pitch-sheet'
 import { RatingInline } from '@/components/rating'
 import { loginHref } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
-import { useJob, useMyApplications } from '@/hooks/use-api'
+import { useJob, useMyApplications, useRefreshAll } from '@/hooks/use-api'
 import { useAuth } from '@/lib/auth'
 import { CATEGORY_LABELS, formatDistance, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { api } from '@/services/api'
 import type { JobStatus } from '@/types'
 
 export function JobDetailsPage() {
@@ -37,8 +39,29 @@ export function JobDetailsPage() {
   const { user } = useAuth()
   const { data: job, isLoading, error } = useJob(jobId)
   const { data: myApps } = useMyApplications()
+  const refreshAll = useRefreshAll()
   const [pitchOpen, setPitchOpen] = useState(false)
   const [lightbox, setLightbox] = useState<number | null>(null)
+  const [responding, setResponding] = useState<'accept' | 'decline' | null>(null)
+
+  async function respondToInvitation(applicationId: number, accept: boolean) {
+    setResponding(accept ? 'accept' : 'decline')
+    try {
+      await api.applications.respondToInvitation(applicationId, accept)
+      toast.success(accept ? 'Invitation accepted' : 'Invitation declined', {
+        description: accept
+          ? 'You are now in the applicant list. The client can screen or accept you next.'
+          : 'You have been removed from this gig.',
+      })
+      await refreshAll()
+    } catch (e) {
+      toast.error(accept ? 'Could not accept invitation' : 'Could not decline invitation', {
+        description: e instanceof Error ? e.message : 'Please try again.',
+      })
+    } finally {
+      setResponding(null)
+    }
+  }
 
   useEffect(() => {
     if (lightbox === null) return
@@ -182,10 +205,36 @@ export function JobDetailsPage() {
               <ApplicationStatusBadge status={myApplication.status} />
             </div>
             <p className="text-sm text-muted-foreground italic">{`"${myApplication.pitch}"`}</p>
+            {myApplication.status === 'INVITED' ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+                The client invited you to apply for this gig.
+              </p>
+            ) : null}
             {(myApplication.status === 'SCREENING' || myApplication.status === 'ACCEPTED') && myApplication.posterContact ? (
               <ContactBar contact={myApplication.posterContact} name={job.poster.fullName} />
             ) : myApplication.status !== 'SCREENING' && myApplication.status !== 'ACCEPTED' ? (
               <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client screens or accepts your application.</p>
+            ) : null}
+            {myApplication.status === 'INVITED' ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="destructive"
+                  className="h-10 font-bold"
+                  onClick={() => respondToInvitation(myApplication.id, false)}
+                  disabled={responding !== null}
+                >
+                  {responding === 'decline' ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+                  Decline
+                </Button>
+                <Button
+                  className="h-10 font-bold"
+                  onClick={() => respondToInvitation(myApplication.id, true)}
+                  disabled={responding !== null}
+                >
+                  {responding === 'accept' ? <Loader2 className="animate-spin" aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
+                  Accept Invitation
+                </Button>
+              </div>
             ) : null}
             {myApplication.status === 'SCREENING' || myApplication.status === 'ACCEPTED' ? (
               <Link
@@ -207,6 +256,7 @@ export function JobDetailsPage() {
           jobOpen={job.status === 'OPEN'}
           jobStatus={job.status}
           applied={Boolean(myApplication)}
+          invited={myApplication?.status === 'INVITED'}
           jobId={job.id}
           onApply={() => setPitchOpen(true)}
         />
@@ -268,6 +318,7 @@ function StickyAction({
   jobOpen,
   jobStatus,
   applied,
+  invited,
   jobId,
   onApply,
 }: {
@@ -276,6 +327,7 @@ function StickyAction({
   jobOpen: boolean
   jobStatus: JobStatus
   applied: boolean
+  invited: boolean
   jobId: number
   onApply: () => void
 }) {
@@ -291,7 +343,7 @@ function StickyAction({
     return (
       <Button disabled variant="secondary" className={big}>
         <CheckCircle2 aria-hidden="true" />
-        Pitch sent
+        {invited ? 'Invitation received' : 'Pitch sent'}
       </Button>
     )
   }

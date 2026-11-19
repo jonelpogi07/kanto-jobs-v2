@@ -60,6 +60,8 @@ export interface KantoApi {
     applications(jobId: number): Promise<ApplicationDTO[]>
     /** POST /jobs/{id}/applications */
     apply(jobId: number, req: CreateApplicationRequest): Promise<ApplicationDTO>
+    /** POST /jobs/{id}/invite-gigster */
+    inviteGigsterToGig(gigId: number, gigster: { id: number; name: string; avatarInitials?: string; rating?: number; completedGigs?: number; barangay?: string; skills?: string[]; bio?: string; phone?: string }): Promise<ApplicationDTO>
     /** POST /jobs/{id}/reviews */
     review(jobId: number, req: CreateReviewRequest): Promise<ReviewDTO>
     /** POST /jobs/{id}/cancel */
@@ -76,6 +78,8 @@ export interface KantoApi {
     decline(id: number): Promise<ApplicationDTO>
     /** POST /applications/{id}/cancel (applicant cancels their own application) */
     cancel(id: number): Promise<ApplicationDTO>
+    /** POST /applications/{id}/respond-invitation */
+    respondToInvitation(id: number, accept: boolean): Promise<ApplicationDTO>
   }
   chat: {
     /** GET /chat/threads — conversations the caller is part of. */

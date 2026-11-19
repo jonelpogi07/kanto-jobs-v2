@@ -466,11 +466,19 @@ export interface SeedApplication {
   jobId: number
   applicantId: number
   pitch: string
-  status: 'PENDING' | 'SCREENING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
+  status: 'INVITED' | 'PENDING' | 'SCREENING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
   createdAt: string
 }
 
 export const SEED_APPLICATIONS: SeedApplication[] = [
+  {
+    id: 1000,
+    jobId: 101,
+    applicantId: 1,
+    pitch: 'Invited by client to apply for this gig.',
+    status: 'INVITED',
+    createdAt: hoursAgo(1),
+  },
   {
     id: 1001,
     jobId: 110,

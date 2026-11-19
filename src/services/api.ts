@@ -69,6 +69,7 @@ const springBootApi: KantoApi = {
     cancel: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/cancel`)),
     applications: (jobId) => data(http.get<ApplicationDTO[]>(`/jobs/${jobId}/applications`)),
     apply: (jobId, req) => data(http.post<ApplicationDTO>(`/jobs/${jobId}/applications`, req)),
+    inviteGigsterToGig: (gigId, gigster) => data(http.post<ApplicationDTO>(`/jobs/${gigId}/invite-gigster`, gigster)),
     review: (jobId, req) => data(http.post<ReviewDTO>(`/jobs/${jobId}/reviews`, req)),
   },
   applications: {
@@ -78,6 +79,7 @@ const springBootApi: KantoApi = {
     accept: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/accept`)),
     decline: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/decline`)),
     cancel: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/cancel`)),
+    respondToInvitation: (id, accept) => data(http.post<ApplicationDTO>(`/applications/${id}/respond-invitation`, { accept })),
   },
   chat: {
     threads: () => data(http.get<ChatThreadDTO[]>('/chat/threads')),
