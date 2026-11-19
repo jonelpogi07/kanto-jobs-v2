@@ -136,7 +136,7 @@ function PostedTab() {
 }
 
 function PostedJobCard({ job }: { job: JobPostDTO }) {
-  const [expanded, setExpanded] = useState(job.status === 'IN_PROGRESS')
+  const [expanded, setExpanded] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
