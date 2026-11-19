@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { Loader2, Plus, Rocket, Trash2 } from 'lucide-react'
+import { Loader2, Plus, RefreshCw, Rocket, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,6 +38,7 @@ export function EditJobPage() {
   const [scheduledAt, setScheduledAt] = useState('')
   const [duration, setDuration] = useState('')
   const [images, setImages] = useState<string[]>([])
+  const [isNegotiable, setIsNegotiable] = useState(false)
   const imagesScrollRef = useRef<HTMLDivElement>(null)
   const [showErrors] = useState(false)
 
@@ -62,6 +63,7 @@ export function EditJobPage() {
         setTiming(j.timing)
         setScheduledAt(j.scheduledAt ?? '')
         setDuration(j.estimatedDuration ?? '')
+        setIsNegotiable(j.isNegotiable ?? false)
         setImages(j.images ?? [])
       })
       .catch(() => toast.error('Could not load gig'))
@@ -173,6 +175,7 @@ export function EditJobPage() {
         scheduledAt: timing === 'SCHEDULED' ? new Date(scheduledAt).toISOString() : null,
         estimatedDuration: duration.trim() || null,
         images,
+        isNegotiable,
       })
       toast.success('Gig updated')
       await refreshAll()
@@ -277,6 +280,23 @@ export function EditJobPage() {
               </span>
             </div>
             {err('amount')}
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                aria-pressed={isNegotiable}
+                onClick={() => setIsNegotiable(!isNegotiable)}
+                className={cn(
+                  'h-10 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 flex items-center gap-1.5',
+                  isNegotiable
+                    ? 'border-primary bg-primary-soft text-orange-800 dark:text-orange-300'
+                    : 'border-border bg-card text-foreground hover:border-foreground/30',
+                )}
+              >
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                Negotiable rate
+              </button>
+              <span className="text-[11px] text-muted-foreground">Open to counter-offers from Gigsters</span>
+            </div>
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">

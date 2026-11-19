@@ -86,8 +86,8 @@ export function InstallPwaPrompt() {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 mx-auto w-full max-w-md px-4 sm:absolute sm:bottom-[calc(4.5rem+env(safe-area-inset-bottom))]">
-      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card/98 p-3 shadow-lg backdrop-blur">
+    <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 mx-auto w-full max-w-md px-4 sm:absolute sm:bottom-[calc(4.5rem+env(safe-area-inset-bottom))] pointer-events-none">
+      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card/98 p-3 shadow-lg backdrop-blur pointer-events-auto">
         <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
           {showIos ? <Share className="size-4" aria-hidden="true" /> : <Download className="size-4" aria-hidden="true" />}
         </div>

@@ -88,6 +88,7 @@ export const SEED_USERS: SeedUser[] = [
     completedGigs: 72,
     gigCoins: 2,
     createdAt: hoursAgo(24 * 510),
+    isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09175556677', viberNumber: '09175556677', messengerUsername: null },
   },
@@ -126,6 +127,7 @@ export const SEED_USERS: SeedUser[] = [
     completedGigs: 14,
     gigCoins: 2,
     createdAt: hoursAgo(24 * 60),
+    isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09451230987', viberNumber: '09451230987', messengerUsername: 'paoloreyes.rider' },
   },
@@ -164,6 +166,7 @@ export const SEED_USERS: SeedUser[] = [
     completedGigs: 9,
     gigCoins: 2,
     createdAt: hoursAgo(24 * 45),
+    isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09207771122', viberNumber: null, messengerUsername: 'mark.aquino' },
   },
@@ -221,6 +224,7 @@ export const SEED_USERS: SeedUser[] = [
     completedGigs: 95,
     gigCoins: 2,
     createdAt: hoursAgo(24 * 200),
+    isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09170000002', viberNumber: null, messengerUsername: null },
   },
@@ -243,6 +247,7 @@ export interface SeedJob {
   posterId: number
   images: string[]
   createdAt: string
+  isNegotiable?: boolean
 }
 
 export const SEED_JOBS: SeedJob[] = [
@@ -281,6 +286,7 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '2 hours',
+    isNegotiable: true,
     images: [
       "https://picsum.photos/seed/gig103/600/400",
     ],
@@ -344,6 +350,7 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'FLEXIBLE',
     scheduledAt: null,
     estimatedDuration: '6-8 hours total',
+    isNegotiable: true,
     images: [
       "https://picsum.photos/seed/gig106/600/400",
     ],
@@ -386,6 +393,7 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '2-3 hours',
+    isNegotiable: true,
     images: [
       "https://picsum.photos/seed/gig108/600/400",
     ],
@@ -449,6 +457,7 @@ export const SEED_JOBS: SeedJob[] = [
     timing: 'URGENT',
     scheduledAt: null,
     estimatedDuration: '3 hours',
+    isNegotiable: true,
     images: [
       "https://picsum.photos/seed/gig111/600/400",
     ],

@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronDown, Inbox, Loader2, Lock, MapPin, MessageCircle,
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ApplicationStatusBadge, JobStatusBadge, SkillTag, VerifiedBadge } from '@/components/badges'
+import { ApplicationStatusBadge, JobStatusBadge, NegotiableBadge, SkillTag, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -201,6 +201,7 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="font-bold text-success dark:text-emerald-400">{formatPay(job.amount, job.compensationType)}</span>
+          {job.isNegotiable && <NegotiableBadge />}
           <span className="inline-flex items-center gap-1">
             <MapPin className="size-3" aria-hidden="true" />
             {job.barangay}

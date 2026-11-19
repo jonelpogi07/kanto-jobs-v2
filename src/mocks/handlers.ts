@@ -144,6 +144,7 @@ function toSummary(user: SeedUser): UserSummaryDTO {
     ratingAverage: user.ratingAverage,
     ratingCount: user.ratingCount,
     completedGigs: user.completedGigs,
+    isNegotiable: user.isNegotiable,
   }
 }
 
@@ -413,6 +414,7 @@ export const mockApi: KantoApi = {
         bio: req.bio.trim(),
         skills: req.skills,
         avatarUrl: req.avatarUrl,
+        isNegotiable: req.isNegotiable,
       })
       save()
       return toUserDTO(user)
@@ -496,6 +498,7 @@ export const mockApi: KantoApi = {
         scheduledAt: req.timing === 'SCHEDULED' ? req.scheduledAt : null,
         estimatedDuration: req.estimatedDuration?.trim() || null,
         images: req.images ?? [],
+        isNegotiable: req.isNegotiable,
         updatedAt: now(),
       })
       save()

@@ -32,6 +32,7 @@ export interface UserSummaryDTO {
   ratingAverage: number
   ratingCount: number
   completedGigs?: number
+  isNegotiable?: boolean
 }
 
 export interface UserDTO extends UserSummaryDTO {
@@ -42,6 +43,7 @@ export interface UserDTO extends UserSummaryDTO {
   completedGigs: number
   gigCoins: number
   createdAt: string
+  isNegotiable?: boolean
 }
 
 /** Only returned by the API once an application has been SCREENING or ACCEPTED. */
@@ -77,6 +79,7 @@ export interface JobPostDTO {
   images: string[]
   createdAt: string
   updatedAt: string
+  isNegotiable?: boolean
 }
 
 export interface ApplicantDTO extends UserSummaryDTO {
@@ -189,6 +192,7 @@ export interface UpdateUserRequest {
   bio: string
   skills: string[]
   avatarUrl: string | null
+  isNegotiable?: boolean
 }
 
 export interface CreateJobPostRequest {
@@ -207,6 +211,7 @@ export interface CreateJobPostRequest {
   scheduledAt: string | null
   estimatedDuration: string | null
   images: string[]
+  isNegotiable?: boolean
 }
 
 export interface UpdateJobPostRequest {
@@ -225,6 +230,7 @@ export interface UpdateJobPostRequest {
   scheduledAt: string | null
   estimatedDuration: string | null
   images: string[]
+  isNegotiable?: boolean
 }
 
 export interface CreateApplicationRequest {

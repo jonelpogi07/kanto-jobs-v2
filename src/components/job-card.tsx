@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { MapPin, Users } from 'lucide-react'
-import { PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
+import { NegotiableBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { RatingInline } from '@/components/rating'
 import { UserAvatar } from '@/components/user-avatar'
 import { CATEGORY_LABELS, formatDistance, formatPeso, timeAgo } from '@/lib/format'
@@ -45,6 +45,7 @@ export function JobCard({ job }: { job: JobPostDTO }) {
             <p className="text-[11px] font-medium text-muted-foreground">
               {job.compensationType === 'HOURLY' ? 'per hour' : 'fixed'}
             </p>
+            {job.isNegotiable && <NegotiableBadge className="mt-1.5" />}
           </div>
         </div>
 

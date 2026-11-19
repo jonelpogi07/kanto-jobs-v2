@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
-import { Loader2, Plus, X } from 'lucide-react'
+import { Loader2, Plus, RefreshCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -19,6 +19,7 @@ import { SKILL_SUGGESTIONS } from '@/lib/format'
 import { LOCATIONS } from '@/mocks/data'
 import { api } from '@/services/api'
 import { tokenStorage } from '@/services/token'
+import { cn } from '@/lib/utils'
 import type { UserDTO } from '@/types'
 
 const selectClass =
@@ -39,6 +40,7 @@ export function EditProfileDialog({
   const [bio, setBio] = useState(user.bio)
   const [skills, setSkills] = useState(user.skills)
   const [skillInput, setSkillInput] = useState('')
+  const [isNegotiable, setIsNegotiable] = useState(user.isNegotiable ?? false)
   const [saving, setSaving] = useState(false)
 
   const locationOptions = LOCATIONS.some((l) => `${l.barangay}|${l.city}` === locationKey)
@@ -64,6 +66,7 @@ export function EditProfileDialog({
         bio,
         skills,
         avatarUrl: user.avatarUrl,
+        isNegotiable,
       })
       await mutate([ME_KEY, tokenStorage.get()], updated, { revalidate: false })
       toast.success('Profile updated', { description: 'Your changes are now visible to posters and applicants.' })
@@ -170,6 +173,27 @@ export function EditProfileDialog({
                     {`+ ${s}`}
                   </button>
                 ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1.5 text-sm font-medium">Gigster rate</legend>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-pressed={isNegotiable}
+                onClick={() => setIsNegotiable(!isNegotiable)}
+                className={cn(
+                  'h-10 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 flex items-center gap-1.5',
+                  isNegotiable
+                    ? 'border-primary bg-primary-soft text-orange-800 dark:text-orange-300'
+                    : 'border-border bg-card text-foreground hover:border-foreground/30',
+                )}
+              >
+                <RefreshCw className="size-3.5" aria-hidden="true" />
+                Rate is negotiable
+              </button>
+              <span className="text-[11px] text-muted-foreground">Open to counter-offers from clients</span>
             </div>
           </fieldset>
 

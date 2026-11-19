@@ -1,4 +1,4 @@
-import { BadgeCheck, CalendarClock, Clock, Zap } from 'lucide-react'
+import { BadgeCheck, CalendarClock, Clock, RefreshCw, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APPLICATION_STATUS_LABELS, JOB_STATUS_LABELS, PAYMENT_LABELS } from '@/lib/format'
 import type { ApplicationStatus, JobStatus, JobTiming, PaymentMethod } from '@/types'
@@ -82,6 +82,22 @@ export function SkillTag({ children }: { children: string }) {
   return (
     <span className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium text-foreground">
       {children}
+    </span>
+  )
+}
+
+export function NegotiableBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        pill,
+        'border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/30 dark:bg-amber-900/10 dark:text-amber-300',
+        className,
+      )}
+      aria-label="Negotiable rate"
+    >
+      <RefreshCw className="size-3" aria-hidden="true" />
+      Negotiable
     </span>
   )
 }

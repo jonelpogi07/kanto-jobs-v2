@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SkillTag, VerifiedBadge } from '@/components/badges'
+import { NegotiableBadge, SkillTag, VerifiedBadge } from '@/components/badges'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EditProfileDialog } from '@/components/edit-profile-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -84,6 +84,7 @@ function ProfileContent() {
           </span>
         )}
         {user.bio ? <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p> : null}
+        {user.isNegotiable && <NegotiableBadge className="mt-2" />}
         <Button variant="outline" className="mt-1 h-10 w-full" onClick={() => setEditing(true)}>
           <Pencil aria-hidden="true" />
           Edit Profile

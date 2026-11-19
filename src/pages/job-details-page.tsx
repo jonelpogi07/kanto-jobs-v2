@@ -19,7 +19,7 @@ import {
 import { buttonVariants } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { ApplicationStatusBadge, JobStatusBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
+import { ApplicationStatusBadge, JobStatusBadge, NegotiableBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
 import { PitchSheet } from '@/components/pitch-sheet'
 import { RatingInline } from '@/components/rating'
@@ -128,6 +128,7 @@ export function JobDetailsPage() {
                 {job.compensationType === 'HOURLY' ? 'Hourly rate' : 'Fixed pay'}
               </p>
               <p className="text-3xl font-extrabold text-success dark:text-emerald-400">{formatPay(job.amount, job.compensationType)}</p>
+              {job.isNegotiable && <NegotiableBadge className="mt-2" />}
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-[11px] font-medium text-emerald-800 dark:text-emerald-300">Paid via</span>
