@@ -31,6 +31,7 @@ export interface UserSummaryDTO {
   phoneVerified: boolean
   ratingAverage: number
   ratingCount: number
+  completedGigs?: number
 }
 
 export interface UserDTO extends UserSummaryDTO {
@@ -80,6 +81,7 @@ export interface JobPostDTO {
 
 export interface ApplicantDTO extends UserSummaryDTO {
   skills: string[]
+  completedGigs?: number
 }
 
 export interface ApplicationDTO {
@@ -88,6 +90,7 @@ export interface ApplicationDTO {
   /** Embedded on "Applied by me" responses so the list can render without extra calls. */
   job: JobPostDTO | null
   applicant: ApplicantDTO
+  applicantCompletedGigs?: number
   pitch: string
   status: ApplicationStatus
   /** Applicant contact, visible to the poster when SCREENING or ACCEPTED. */

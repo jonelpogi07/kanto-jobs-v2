@@ -65,8 +65,14 @@ function load(): MockDb {
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as MockDb
-      parsed.users = parsed.users.map((u: any) => ({ ...u, gigCoins: u.gigCoins ?? 2 }))
-      const acceptedIds = new Set(
+       parsed.users = parsed.users.map((u: any) => ({ ...u, gigCoins: u.gigCoins ?? 2 }))
+       // Auto-migrate newly seeded gigsters into existing sessions
+       for (const seeded of SEED_USERS) {
+         if (!parsed.users.some((u: any) => u.id === seeded.id)) {
+           parsed.users.push(structuredClone(seeded))
+         }
+       }
+       const acceptedIds = new Set(
         parsed.applications.filter((a) => a.status === 'ACCEPTED' || a.status === 'SCREENING').map((a) => a.id),
       )
       parsed.messages = (parsed.messages ?? []).filter((m) => acceptedIds.has(m.applicationId))
@@ -137,11 +143,12 @@ function toSummary(user: SeedUser): UserSummaryDTO {
     phoneVerified: user.phoneVerified,
     ratingAverage: user.ratingAverage,
     ratingCount: user.ratingCount,
+    completedGigs: user.completedGigs,
   }
 }
 
 function toApplicant(user: SeedUser): ApplicantDTO {
-  return { ...toSummary(user), skills: [...user.skills] }
+  return { ...toSummary(user), skills: [...user.skills], completedGigs: user.completedGigs }
 }
 
 function authResponse(user: SeedUser): AuthResponse {
@@ -189,6 +196,7 @@ function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: bool
     jobId: app.jobId,
     job: embedJob ? toJobDTO(job) : null,
     applicant: toApplicant(applicant),
+    applicantCompletedGigs: applicant.completedGigs ?? 0,
     pitch: app.pitch,
     status: app.status,
     applicantContact: contactUnlocked && viewerId === job.posterId ? { ...applicant.contact } : null,
@@ -606,16 +614,21 @@ export const mockApi: KantoApi = {
          db.users.push(applicant)
        }
 
-       const existing = db.applications.find((a) => a.jobId === gigId && a.applicantId === applicant.id)
-       if (existing) {
-         if (existing.status === 'REJECTED' || existing.status === 'CANCELLED') {
-           existing.status = 'INVITED'
-           existing.pitch = 'Invited by client to apply for this gig.'
-           existing.createdAt = now()
-           save()
-         }
-         return toApplicationDTO(existing, userId, false)
-       }
+        const existing = db.applications.find((a) => {
+          if (a.jobId !== gigId) return false
+          if (a.applicantId === applicant.id) return true
+          const u = db.users.find((x) => x.id === a.applicantId)
+          return !!u && u.fullName.trim().toLowerCase() === name.toLowerCase()
+        })
+        if (existing) {
+          if (existing.status === 'REJECTED' || existing.status === 'CANCELLED') {
+            existing.status = 'INVITED'
+            existing.pitch = 'Invited by client to apply for this gig.'
+            existing.createdAt = now()
+            save()
+          }
+          return toApplicationDTO(existing, userId, false)
+        }
        const app: SeedApplication = {
          id: nextId(db.applications),
          jobId: gigId,

@@ -359,10 +359,18 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
             <p className="truncate text-sm font-bold">{app.applicant.fullName}</p>
             {app.applicant.phoneVerified ? <VerifiedBadge compact /> : null}
           </div>
-          <div className="flex items-center gap-2">
-            <RatingInline average={app.applicant.ratingAverage} count={app.applicant.ratingCount} />
-            <span className="truncate text-xs text-muted-foreground">{app.applicant.barangay}</span>
-          </div>
+<div className="flex flex-col gap-0.5">
+              <div className="inline-flex items-center gap-2">
+                <RatingInline average={app.applicant.ratingAverage} count={app.applicant.ratingCount} />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {app.applicantCompletedGigs ?? app.applicant.completedGigs ?? app.applicant.ratingCount} gigs completed
+                </span>
+              </div>
+              <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                {app.applicant.barangay}
+              </span>
+            </div>
         </div>
         {app.status !== 'PENDING' ? <ApplicationStatusBadge status={app.status} /> : null}
       </div>
