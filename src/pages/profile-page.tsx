@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { NegotiableBadge, SkillTag, VerifiedBadge } from '@/components/badges'
+import { SkillTag, VerifiedBadge } from '@/components/badges'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EditProfileDialog } from '@/components/edit-profile-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -98,7 +98,6 @@ function ProfileContent() {
           </span>
         )}
         {user.bio ? <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p> : null}
-        {user.isNegotiable && <NegotiableBadge className="mt-2" />}
         <Button variant="outline" className="mt-1 h-10 w-full" onClick={() => setEditing(true)}>
           <Pencil aria-hidden="true" />
           Edit Profile
@@ -219,32 +218,40 @@ function Reviews({ user }: { user: UserDTO }) {
 }
 
 function WorkingDays({ days }: { days: string[] }) {
+  const anytime = days.length === WEEKDAYS.length
+  const selected = anytime ? [] : WEEKDAYS.filter((d) => days.includes(d))
   return (
     <section aria-labelledby="working-days-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <h2 id="working-days-heading" className="text-sm font-bold">
         Working Days
       </h2>
-      {days.length > 0 ? (
+      {days.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Not set</p>
+      ) : (
         <div className="flex flex-wrap gap-1.5">
-          {WEEKDAYS.map((day) => {
-            const active = days.includes(day)
-            return (
+          {anytime ? (
+            <span
+              className={cn(
+                'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
+                'border-orange-200 bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-400/30',
+              )}
+            >
+              Anytime
+            </span>
+          ) : (
+            selected.map((day) => (
               <span
                 key={day}
                 className={cn(
                   'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
-                  active
-                    ? 'border-orange-200 bg-orange-50 text-orange-600'
-                    : 'border-border bg-card text-muted-foreground',
+                  'border-orange-200 bg-orange-50 text-orange-600',
                 )}
               >
                 {day}
               </span>
-            )
-          })}
+            ))
+          )}
         </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">Not set</p>
       )}
     </section>
   )

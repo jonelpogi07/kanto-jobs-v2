@@ -6,6 +6,7 @@ import type {
   JobTiming,
   LocationOption,
   PaymentMethod,
+  RateType,
   UserDTO,
 } from '@/types'
 
@@ -31,6 +32,7 @@ const hoursFromNow = (h: number) => new Date(Date.now() + h * 3_600_000).toISOSt
 export interface SeedUser extends UserDTO {
   password: string
   contact: ContactInfoDTO
+  rateType: RateType
 }
 
 export const SEED_USERS: SeedUser[] = [
@@ -53,6 +55,7 @@ export const SEED_USERS: SeedUser[] = [
     password: DEMO_CREDENTIALS.password,
     contact: { phoneNumber: '09171234567', viberNumber: '09171234567', messengerUsername: 'juan.delacruz' },
     availableDays: ['Sat', 'Sun'],
+    rateType: 'both',
   },
   {
     id: 2,
@@ -73,6 +76,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09281112233', viberNumber: '09281112233', messengerUsername: 'maria.designs' },
     availableDays: ['Sat', 'Sun'],
+    rateType: 'hourly',
   },
   {
     id: 3,
@@ -94,6 +98,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09175556677', viberNumber: '09175556677', messengerUsername: null },
     availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    rateType: 'both',
   },
   {
     id: 4,
@@ -114,6 +119,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09398887766', viberNumber: null, messengerUsername: 'liza.manalo' },
     availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    rateType: 'per_gig',
   },
   {
     id: 5,
@@ -135,6 +141,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09451230987', viberNumber: '09451230987', messengerUsername: 'paoloreyes.rider' },
     availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    rateType: 'per_gig',
   },
   {
     id: 6,
@@ -155,6 +162,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09184443322', viberNumber: '09184443322', messengerUsername: 'angelacruz.events' },
     availableDays: ['Fri', 'Sat', 'Sun'],
+    rateType: 'hourly',
   },
   {
     id: 7,
@@ -176,6 +184,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09207771122', viberNumber: null, messengerUsername: 'mark.aquino' },
     availableDays: ['Mon', 'Wed', 'Fri', 'Sat'],
+    rateType: 'hourly',
   },
   {
     id: 8,
@@ -196,6 +205,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09363334455', viberNumber: '09363334455', messengerUsername: null },
     availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+    rateType: 'per_gig',
   },
   {
     id: 9,
@@ -216,6 +226,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09170000001', viberNumber: null, messengerUsername: null },
     availableDays: ['Tue', 'Thu', 'Sat'],
+    rateType: 'hourly',
   },
   {
     id: 10,
@@ -237,6 +248,7 @@ export const SEED_USERS: SeedUser[] = [
     password: 'password123',
     contact: { phoneNumber: '09170000002', viberNumber: null, messengerUsername: null },
     availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    rateType: 'both',
   },
 ]
 

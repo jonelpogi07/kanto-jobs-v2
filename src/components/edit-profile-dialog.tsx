@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
-import { Loader2, Plus, RefreshCw, X, Calendar } from 'lucide-react'
+import { Loader2, Plus, X, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -15,12 +15,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ME_KEY } from '@/lib/auth'
-import { SKILL_SUGGESTIONS, WEEKDAYS } from '@/lib/format'
+import { RATE_TYPE_LABELS, SKILL_SUGGESTIONS, WEEKDAYS } from '@/lib/format'
 import { LOCATIONS } from '@/mocks/data'
 import { api } from '@/services/api'
 import { tokenStorage } from '@/services/token'
 import { cn } from '@/lib/utils'
-import type { UserDTO } from '@/types'
+import type { RateType, UserDTO } from '@/types'
 
 const selectClass =
   'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
@@ -37,15 +37,50 @@ export function EditProfileDialog({
   onWorkingDaysChange?: (days: string[]) => void
 }) {
   const { mutate } = useSWRConfig()
+
+  function sortDays(days: string[]): string[] {
+    return [...days].sort(
+      (a, b) =>
+        WEEKDAYS.indexOf(a as (typeof WEEKDAYS)[number]) -
+        WEEKDAYS.indexOf(b as (typeof WEEKDAYS)[number]),
+    )
+  }
+
+  function readWorkingDays(id: number): string[] {
+    if (typeof window === 'undefined') return [...WEEKDAYS]
+    try {
+      const raw = localStorage.getItem(`profileWorkingDays:${id}`)
+      if (raw) {
+        const parsed = JSON.parse(raw) as string[]
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {
+      // ignore corrupt storage
+    }
+    return [...WEEKDAYS]
+  }
+
+  function readRateType(id: number): RateType {
+    if (typeof window === 'undefined') return 'both'
+    try {
+      const raw = localStorage.getItem(`profileRateType:${id}`)
+      if (raw) {
+        const parsed = raw as RateType
+        if (parsed === 'hourly' || parsed === 'per_gig' || parsed === 'both') return parsed
+      }
+    } catch {
+      // ignore corrupt storage
+    }
+    return 'both'
+  }
+
   const [fullName, setFullName] = useState(user.fullName)
   const [locationKey, setLocationKey] = useState(`${user.barangay}|${user.city}`)
   const [bio, setBio] = useState(user.bio)
   const [skills, setSkills] = useState(user.skills)
   const [skillInput, setSkillInput] = useState('')
-  const [isNegotiable, setIsNegotiable] = useState(user.isNegotiable ?? false)
-  const [availableDays, setAvailableDays] = useState<string[]>(
-    user.availableDays && user.availableDays.length > 0 ? user.availableDays : [...WEEKDAYS],
-  )
+  const [availableDays, setAvailableDays] = useState<string[]>(() => sortDays(readWorkingDays(user.id)))
+  const [rateType, setRateType] = useState<RateType>(() => (user.rateType ?? readRateType(user.id)))
   const [saving, setSaving] = useState(false)
 
   const anytimeActive = availableDays.length >= WEEKDAYS.length
@@ -53,6 +88,17 @@ export function EditProfileDialog({
   function toggleAnytime() {
     setAvailableDays(anytimeActive ? [] : [...WEEKDAYS])
   }
+
+  useEffect(() => {
+    if (!open) return
+    setFullName(user.fullName)
+    setLocationKey(`${user.barangay}|${user.city}`)
+    setBio(user.bio)
+    setSkills(user.skills)
+    setAvailableDays(sortDays(readWorkingDays(user.id)))
+    setRateType(user.rateType ?? readRateType(user.id))
+    setSkillInput('')
+  }, [open, user])
 
   const locationOptions = LOCATIONS.some((l) => `${l.barangay}|${l.city}` === locationKey)
     ? LOCATIONS
@@ -70,6 +116,7 @@ export function EditProfileDialog({
     setSaving(true)
     try {
       const [barangay, city] = locationKey.split('|')
+      const sortedDays = sortDays(availableDays)
       const updated = await api.users.updateMe({
         fullName,
         barangay,
@@ -77,13 +124,13 @@ export function EditProfileDialog({
         bio,
         skills,
         avatarUrl: user.avatarUrl,
-        isNegotiable,
-        availableDays,
+        availableDays: sortedDays,
+        rateType,
       })
-      localStorage.setItem(`profileWorkingDays:${user.id}`, JSON.stringify(availableDays))
+      localStorage.setItem(`profileWorkingDays:${user.id}`, JSON.stringify(sortedDays))
+      localStorage.setItem(`profileRateType:${user.id}`, rateType)
       await mutate([ME_KEY, tokenStorage.get()], updated, { revalidate: false })
-      onWorkingDaysChange?.(availableDays)
-      localStorage.setItem(`profileWorkingDays:${user.id}`, JSON.stringify(availableDays))
+      onWorkingDaysChange?.(sortedDays)
       toast.success('Profile updated', { description: 'Your changes are now visible to posters and applicants.' })
       onOpenChange(false)
     } catch (err) {
@@ -192,23 +239,28 @@ export function EditProfileDialog({
           </fieldset>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1.5 text-sm font-medium">Gigster rate</legend>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-pressed={isNegotiable}
-                onClick={() => setIsNegotiable(!isNegotiable)}
-                className={cn(
-                  'h-10 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 flex items-center gap-1.5',
-                  isNegotiable
-                    ? 'border-primary bg-primary-soft text-orange-800 dark:text-orange-300'
-                    : 'border-border bg-card text-foreground hover:border-foreground/30',
-                )}
-              >
-                <RefreshCw className="size-3.5" aria-hidden="true" />
-                Rate is negotiable
-              </button>
-              <span className="text-[11px] text-muted-foreground">Open to counter-offers from clients</span>
+            <legend className="mb-1.5 text-sm font-medium">Preferred rate type</legend>
+            <p className="text-xs text-muted-foreground">How you prefer to be paid — shown as a tag, no amounts.</p>
+            <div className="flex flex-nowrap gap-1.5" role="group" aria-label="Preferred rate type">
+              {(['hourly', 'per_gig', 'both'] as const).map((value) => {
+                const active = rateType === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setRateType(value)}
+                    className={cn(
+                      'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                      active
+                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                        : 'border-border bg-card text-foreground hover:border-foreground/30',
+                    )}
+                  >
+                    {RATE_TYPE_LABELS[value]}
+                  </button>
+                )
+              })}
             </div>
           </fieldset>
 

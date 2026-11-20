@@ -129,8 +129,8 @@ function findUser(id: number): SeedUser {
 }
 
 function toUserDTO(user: SeedUser): UserDTO {
-  const { password: _password, contact: _contact, ...dto } = user
-  return structuredClone(dto)
+  const { password: _password, contact: _contact, rateType, ...dto } = user
+  return structuredClone({ ...dto, rateType })
 }
 
 function toSummary(user: SeedUser): UserSummaryDTO {
@@ -380,6 +380,7 @@ export const mockApi: KantoApi = {
         gigCoins: 2,
         createdAt: now(),
         password,
+        rateType: 'both',
         contact: { phoneNumber: isEmail ? '' : id, viberNumber: null, messengerUsername: null },
       }
       db.users.push(user)
@@ -416,6 +417,7 @@ export const mockApi: KantoApi = {
         avatarUrl: req.avatarUrl,
         isNegotiable: req.isNegotiable,
       })
+      if (req.rateType) user.rateType = req.rateType
       save()
       return toUserDTO(user)
     },
@@ -609,16 +611,17 @@ export const mockApi: KantoApi = {
            phoneNumber: gigster.phone?.trim() || null,
            bio: gigster.bio?.trim() || '',
            skills: [...(gigster.skills ?? [])],
-           completedGigs: gigster.completedGigs ?? 0,
-           gigCoins: 2,
-           createdAt: now(),
-           password: 'password123',
-           contact: {
-             phoneNumber: gigster.phone?.trim() || '',
-             viberNumber: null,
-             messengerUsername: null,
-           },
-         }
+completedGigs: gigster.completedGigs ?? 0,
+            gigCoins: 2,
+            createdAt: now(),
+            password: 'password123',
+            rateType: 'both',
+            contact: {
+              phoneNumber: gigster.phone?.trim() || '',
+              viberNumber: null,
+              messengerUsername: null,
+            },
+          }
          db.users.push(applicant)
        }
 

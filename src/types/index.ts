@@ -13,6 +13,9 @@ export type JobCategory =
 
 export type CompensationType = 'FIXED' | 'HOURLY'
 
+/** Rate type preference for gigsters — displayed without any currency/peso amounts. */
+export type RateType = 'hourly' | 'per_gig' | 'both'
+
 export type PaymentMethod = 'CASH' | 'GCASH' | 'MAYA'
 
 export type JobTiming = 'URGENT' | 'SCHEDULED' | 'FLEXIBLE'
@@ -34,6 +37,7 @@ export interface UserSummaryDTO {
   completedGigs?: number
   isNegotiable?: boolean
   availableDays?: string[]
+  rateType?: RateType
 }
 
 export interface UserDTO extends UserSummaryDTO {
@@ -46,6 +50,7 @@ export interface UserDTO extends UserSummaryDTO {
   createdAt: string
   isNegotiable?: boolean
   availableDays?: string[]
+  rateType?: RateType
 }
 
 /** Only returned by the API once an application has been SCREENING or ACCEPTED. */
@@ -196,6 +201,7 @@ export interface UpdateUserRequest {
   avatarUrl: string | null
   isNegotiable?: boolean
   availableDays?: string[]
+  rateType?: RateType
 }
 
 export interface CreateJobPostRequest {

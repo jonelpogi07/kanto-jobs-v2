@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Slider } from '@/components/ui/slider'
 import { useLocation } from '@/lib/location'
-import { CATEGORIES, CATEGORY_LABELS, formatPeso, WEEKDAYS } from '@/lib/format'
+import { CATEGORIES, CATEGORY_LABELS, formatPeso, RATE_TYPE_LABELS, WEEKDAYS } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { JobCategory, JobTiming, CompensationType } from '@/types'
+import type { JobCategory, JobTiming, CompensationType, RateType } from '@/types'
 
 export function LocationPicker() {
   const { location, options, setLocation } = useLocation()
@@ -109,6 +109,7 @@ export interface FeedFilters {
   maxDistanceKm: number | undefined
   minPay: number | undefined
   availableDays: string[]
+  rateType: RateType[]
   timing?: JobTiming[]
   compensationTypes?: CompensationType[]
   isNegotiable?: boolean
@@ -125,12 +126,15 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
   const [selectedSchedule, setSelectedSchedule] = useState<JobTiming[]>(filters.timing ?? [])
   const [selectedCompensationTypes, setSelectedCompensationTypes] = useState<CompensationType[]>(filters.compensationTypes ?? [])
   const [isNegotiable, setIsNegotiable] = useState(filters.isNegotiable ?? false)
+  const [selectedRateTypes, setSelectedRateTypes] = useState<RateType[]>(filters.rateType ?? [])
   const anytimeActive = selectedSchedule.length === 0
   const compensationAnyActive = selectedCompensationTypes.length === 0 || selectedCompensationTypes.length === 2
+  const rateTypeAnyActive = selectedRateTypes.length === 0 || selectedRateTypes.length >= 2
   const activeCount =
     Number(filters.maxDistanceKm != null) +
     Number(mode === 'gigs' && filters.minPay != null) +
-    Number(mode === 'gigsters' && filters.availableDays?.length > 0) +
+    Number(mode === 'gigsters' && selectedDays.length > 0) +
+    Number(mode === 'gigsters' && filters.rateType.length > 0) +
     Number(mode === 'gigs' && (filters.timing?.length ?? 0) > 0) +
     Number(mode === 'gigs' && !compensationAnyActive) +
     Number(mode === 'gigs' && filters.isNegotiable)
@@ -151,12 +155,21 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
     })
   }
 
+  function toggleRateType(value: RateType) {
+    setSelectedRateTypes((prev) => {
+      const next = prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+      if (next.length === 0 || next.length >= 2) return []
+      return next
+    })
+  }
+
   function openSheet() {
     setDistance(filters.maxDistanceKm ?? DISTANCE_MAX)
     setMinPay(filters.minPay ?? 0)
     setSelectedDays(filters.availableDays ?? [])
     setSelectedSchedule(filters.timing ?? [])
     setSelectedCompensationTypes(filters.compensationTypes ?? [])
+    setSelectedRateTypes(filters.rateType ?? [])
     setIsNegotiable(filters.isNegotiable ?? false)
     setOpen(true)
   }
@@ -166,6 +179,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
       maxDistanceKm: distance >= DISTANCE_MAX ? undefined : distance,
       minPay: mode === 'gigs' && minPay > 0 ? minPay : undefined,
       availableDays: selectedDays.length > 0 ? selectedDays : [],
+      rateType: mode === 'gigsters' && !rateTypeAnyActive ? selectedRateTypes : [],
       timing: mode === 'gigs' ? selectedSchedule : filters.timing,
       compensationTypes: mode === 'gigs' && !compensationAnyActive ? selectedCompensationTypes : undefined,
       isNegotiable: mode === 'gigs' && isNegotiable ? true : undefined,
@@ -368,40 +382,80 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                 <span id="days-label" className="text-sm font-semibold">
                   Available days
                 </span>
+              <button
+                type="button"
+                onClick={() => setSelectedDays([])}
+                className={cn(
+                  'shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                  selectedDays.length === 0
+                    ? 'border-orange-200 bg-orange-50 text-orange-600'
+                    : 'border-border bg-card text-muted-foreground hover:border-foreground/30',
+                )}
+                aria-pressed={selectedDays.length === 0}
+              >
+                Anytime
+              </button>
+            </div>
+            <div className="flex flex-nowrap gap-1" role="group" aria-labelledby="days-label">
+              {WEEKDAYS.map((day) => {
+                const active = selectedDays.includes(day)
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={cn(
+                      'shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                      active
+                        ? 'border-orange-500 bg-orange-500 text-white'
+                        : 'border-border bg-card text-foreground hover:border-foreground/30',
+                    )}
+                    aria-pressed={active}
+                  >
+                    {day}
+                  </button>
+                )
+              })}
+              </div>
+            </div>
+          ) : null}
+            {mode === 'gigsters' ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <span id="rate-type-label" className="text-sm font-semibold">
+                  Rate type
+                </span>
                 <button
                   type="button"
-                  onClick={() => setSelectedDays([])}
+                  onClick={() => setSelectedRateTypes([])}
                   className={cn(
                     'shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                    anytimeActive
+                    rateTypeAnyActive
                       ? 'border-orange-200 bg-orange-50 text-orange-600'
                       : 'border-border bg-card text-muted-foreground hover:border-foreground/30',
                   )}
-                  aria-pressed={anytimeActive}
+                  aria-pressed={rateTypeAnyActive}
                 >
-                  Anytime
+                  Any
                 </button>
               </div>
-              <div className="flex flex-nowrap gap-1" role="group" aria-labelledby="days-label">
-                {WEEKDAYS.map((day) => {
-                  const active = selectedDays.includes(day)
+              <div className="flex flex-nowrap gap-1" role="group" aria-labelledby="rate-type-label">
+                {(['hourly', 'per_gig'] as const).map((value) => {
+                  const active = selectedRateTypes.includes(value)
                   return (
                     <button
-                      key={day}
+                      key={value}
                       type="button"
-                      onClick={() => {
-                        if (anytimeActive) setSelectedDays([])
-                        toggleDay(day)
-                      }}
-                      className={cn(
-                        'shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                        active
-                          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                          : 'border-border bg-card text-foreground hover:border-foreground/30',
-                      )}
                       aria-pressed={active}
+                      onClick={() => toggleRateType(value)}
+                      className={cn(
+                        'shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                        active
+                          ? 'bg-orange-50 border-orange-400 text-orange-700 dark:bg-orange-500/15 dark:border-orange-400 dark:text-orange-300 font-medium'
+                          : 'bg-white border-gray-200 text-gray-800',
+                      )}
                     >
-                      {day}
+                      {RATE_TYPE_LABELS[value]}
                     </button>
                   )
                 })}
@@ -418,6 +472,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                   setSelectedDays([])
                   setSelectedSchedule([])
                   setSelectedCompensationTypes([])
+                  setSelectedRateTypes([])
                   setIsNegotiable(false)
                 }}
               >
