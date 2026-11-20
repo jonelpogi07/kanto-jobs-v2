@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { MapPin, Users } from 'lucide-react'
-import { NegotiableBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
+import { NegotiableBadge, PartnerBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { RatingInline } from '@/components/rating'
 import { UserAvatar } from '@/components/user-avatar'
 import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatDistance, formatPeso, timeAgo } from '@/lib/format'
@@ -36,6 +36,7 @@ export function JobCard({ job }: { job: JobPostDTO }) {
           )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted-foreground">{CATEGORY_LABELS[job.category]}</p>
+            {(job.partnerMerchantName || job.merchantName) && <PartnerBadge name={job.partnerMerchantName ?? job.merchantName} />}
             <h3 className="mt-0.5 text-pretty text-base leading-snug font-bold text-foreground group-hover:text-primary">
               {job.title}
             </h3>

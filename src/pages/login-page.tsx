@@ -191,19 +191,60 @@ export function LoginPage() {
       </Button>
 
       {USE_MOCKS && mode === 'login' ? (
-        <button
-          type="button"
-          onClick={() => {
-            setIdentifier(DEMO_CREDENTIALS.identifier)
-            setPassword(DEMO_CREDENTIALS.password)
-          }}
-          className="mt-6 rounded-xl border border-dashed border-primary/40 bg-primary-soft px-4 py-3 text-left text-sm"
-        >
-          <span className="font-semibold text-orange-800 dark:text-orange-300">Demo account</span>
-          <span className="block text-xs text-orange-800/80 dark:text-orange-300/80">
-            {`Tap to fill ${DEMO_CREDENTIALS.identifier} / ${DEMO_CREDENTIALS.password}`}
-          </span>
-        </button>
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setIdentifier(DEMO_CREDENTIALS.client.identifier)
+              setPassword(DEMO_CREDENTIALS.client.password)
+            }}
+            className="rounded-xl border border-dashed border-primary/40 bg-primary-soft px-4 py-3 text-left text-sm"
+          >
+            <span className="font-semibold text-orange-800 dark:text-orange-300">Demo: Regular Client</span>
+            <span className="block text-xs text-orange-800/80 dark:text-orange-300/80">
+              {`Tap to fill ${DEMO_CREDENTIALS.client.identifier} / ${DEMO_CREDENTIALS.client.password}`}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIdentifier(DEMO_CREDENTIALS.merchants.upayaCafe.identifier)
+              setPassword(DEMO_CREDENTIALS.merchants.upayaCafe.password)
+            }}
+            className="rounded-xl border border-dashed border-amber-500/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-left text-sm"
+          >
+            <span className="font-semibold text-amber-800 dark:text-amber-300">Demo: Upaya Cafe (Merchant)</span>
+            <span className="block text-xs text-amber-800/80 dark:text-amber-300/80">
+              {`Tap to fill ${DEMO_CREDENTIALS.merchants.upayaCafe.identifier} / ${DEMO_CREDENTIALS.merchants.upayaCafe.password}`}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIdentifier(DEMO_CREDENTIALS.merchants.salangiKape.identifier)
+              setPassword(DEMO_CREDENTIALS.merchants.salangiKape.password)
+            }}
+            className="rounded-xl border border-dashed border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-left text-sm"
+          >
+            <span className="font-semibold text-emerald-800 dark:text-emerald-300">Demo: Salangi ka't magkape (Merchant)</span>
+            <span className="block text-xs text-emerald-800/80 dark:text-emerald-300/80">
+              {`Tap to fill ${DEMO_CREDENTIALS.merchants.salangiKape.identifier} / ${DEMO_CREDENTIALS.merchants.salangiKape.password}`}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIdentifier(DEMO_CREDENTIALS.merchants.modernCafe.identifier)
+              setPassword(DEMO_CREDENTIALS.merchants.modernCafe.password)
+            }}
+            className="rounded-xl border border-dashed border-blue-500/40 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-left text-sm"
+          >
+            <span className="font-semibold text-blue-800 dark:text-blue-300">Demo: The Modern Cafe (Merchant)</span>
+            <span className="block text-xs text-blue-800/80 dark:text-blue-300/80">
+              {`Tap to fill ${DEMO_CREDENTIALS.merchants.modernCafe.identifier} / ${DEMO_CREDENTIALS.merchants.modernCafe.password}`}
+            </span>
+          </button>
+        </div>
       ) : null}
     </div>
   )

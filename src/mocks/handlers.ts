@@ -44,7 +44,7 @@ function seed(): MockDb {
   return {
     users: structuredClone(SEED_USERS),
     jobs: SEED_JOBS.map(({ location, ...job }) => {
-      const loc = LOCATIONS[location]
+      const loc = LOCATIONS[location] ?? LOCATIONS[0]
       return {
         ...job,
         barangay: loc.barangay,
@@ -436,7 +436,7 @@ export const mockApi: KantoApi = {
   },
 
   jobs: {
-    async search({ q, category, lat, lng, maxDistanceKm, minPay, timing, compensationTypes, isNegotiable, page, size }) {
+    async search({ q, category, lat, lng, maxDistanceKm, minPay, timing, compensationTypes, isNegotiable, isMerchantGig, page, size }) {
       await delay()
       const coords = lat != null && lng != null ? { lat, lng } : undefined
       const needle = q?.trim().toLowerCase()
@@ -449,6 +449,7 @@ export const mockApi: KantoApi = {
         .filter((j) => timings.length === 0 || timings.includes(j.timing))
         .filter((j) => compTypes.length === 0 || compTypes.includes(j.compensationType))
         .filter((j) => !isNegotiable || j.isNegotiable === true)
+.filter((j) => !isMerchantGig || j.partnerMerchantId || j.partnerMerchantName || j.merchantId || j.merchantName)
         .filter(
           (j) =>
             !needle ||
@@ -457,6 +458,10 @@ export const mockApi: KantoApi = {
         .map((j) => toJobDTO(j, coords))
         .filter((j) => maxDistanceKm == null || j.distanceKm == null || j.distanceKm <= maxDistanceKm)
         .sort((a, b) => {
+           // Prioritize partner merchant gigs to the top of the feed
+           const boostedScore = (j: JobPostDTO) => (j.partnerMerchantId || j.partnerMerchantName || j.merchantId || j.merchantName ? 1 : 0)
+          const boostDiff = boostedScore(b) - boostedScore(a)
+          if (boostDiff !== 0) return boostDiff
           const urgency = Number(b.timing === 'URGENT') - Number(a.timing === 'URGENT')
           return urgency || (a.distanceKm ?? 0) - (b.distanceKm ?? 0) || byNewest(a, b)
         })
@@ -469,6 +474,12 @@ export const mockApi: KantoApi = {
     async create(req) {
       await delay()
       const posterId = currentUserId()
+      const poster = findUser(posterId)
+      const isMerchantGig = req.isMerchantGig ?? false
+      const isCustomerOrderDelivery = req.isCustomerOrderDelivery ?? false
+      const merchantId = req.merchantId ?? (isMerchantGig ? posterId : undefined)
+      const merchantName = req.merchantName ?? (isMerchantGig ? poster.merchantBusinessName ?? undefined : undefined)
+      const merchantBoosted = req.merchantBoosted ?? (isMerchantGig && poster.isBusinessMerchant ? true : false)
       const job: JobRecord = {
         ...req,
         images: req.images ?? [],
@@ -477,6 +488,11 @@ export const mockApi: KantoApi = {
         status: 'OPEN',
         createdAt: now(),
         updatedAt: now(),
+        isMerchantGig,
+        isCustomerOrderDelivery,
+        merchantId,
+        merchantName,
+        merchantBoosted,
       }
       db.jobs.push(job)
       seedDummyApplicants(job)
@@ -703,6 +719,15 @@ completedGigs: gigster.completedGigs ?? 0,
       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can screen applicants.')
       if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
       if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be screened.')
+      const poster = findUser(job.posterId)
+      // Active business merchants with unlimitedGigsterScreening can screen without spending GigCoins
+      const hasUnlimitedScreening = poster.isBusinessMerchant && poster.unlimitedGigsterScreening === true
+      if (!hasUnlimitedScreening && (poster.gigCoins ?? 0) < 1) {
+        throw new ApiError(409, 'Insufficient GigCoins. Spend 1 GigCoin to screen an applicant.')
+      }
+      if (!hasUnlimitedScreening) {
+        poster.gigCoins = Math.max(0, (poster.gigCoins ?? 2) - 1)
+      }
       app.status = 'SCREENING'
       save()
       return toApplicationDTO(app, userId, false)

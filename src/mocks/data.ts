@@ -22,8 +22,24 @@ export const LOCATIONS: LocationOption[] = [
 ]
 
 export const DEMO_CREDENTIALS = {
-  identifier: 'juan@kantojobs.ph',
-  password: 'password123',
+  client: {
+    identifier: 'juan@kantojobs.ph',
+    password: 'password123',
+  },
+  merchants: {
+    upayaCafe: {
+      identifier: 'upaya@kantojobs.ph',
+      password: 'password123',
+    },
+    salangiKape: {
+      identifier: 'salangi@kantojobs.ph',
+      password: 'password123',
+    },
+    modernCafe: {
+      identifier: 'modern@kantojobs.ph',
+      password: 'password123',
+    },
+  },
 }
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString()
@@ -33,6 +49,10 @@ export interface SeedUser extends UserDTO {
   password: string
   contact: ContactInfoDTO
   rateType: RateType
+  isBusinessMerchant?: boolean
+  merchantBusinessName?: string
+  unlimitedGigsterScreening?: boolean
+  merchantPartnershipActive?: boolean
 }
 
 export const SEED_USERS: SeedUser[] = [
@@ -47,18 +67,95 @@ export const SEED_USERS: SeedUser[] = [
     ratingCount: 23,
     email: 'juan@kantojobs.ph',
     phoneNumber: '09171234567',
-    bio: 'Taga-Dolores since birth. May sariling motor at tools. Sideline ko ang delivery at simpleng repairs tuwing weekends.',
+    bio: 'Taga-Dolores since birth. May sariling motor at tools. Sideline ko ang delivery at simplen repairs tuwing weekends.',
     skills: ['Motorcycle Rider', 'Home Repair', 'Errands'],
     completedGigs: 31,
     gigCoins: 2,
     createdAt: hoursAgo(24 * 220),
-    password: DEMO_CREDENTIALS.password,
+    password: DEMO_CREDENTIALS.client.password,
     contact: { phoneNumber: '09171234567', viberNumber: '09171234567', messengerUsername: 'juan.delacruz' },
     availableDays: ['Sat', 'Sun'],
     rateType: 'both',
+    isBusinessMerchant: false,
+    merchantPartnershipActive: false,
   },
   {
     id: 2,
+    fullName: 'Upaya Cafe',
+    avatarUrl: null,
+    barangay: 'Brgy. Anupul',
+    city: 'Bamban, Tarlac',
+    phoneVerified: true,
+    ratingAverage: 4.9,
+    ratingCount: 34,
+    email: 'upaya@kantojobs.ph',
+    phoneNumber: '09171112233',
+    bio: 'Local cafe in Bamban, Tarlac. Known for specialty coffee and Filipino comfort food. Posting delivery and errand gigs.',
+    skills: ['Business Management', 'Food Delivery', 'Customer Service'],
+    completedGigs: 87,
+    gigCoins: 10,
+    createdAt: hoursAgo(24 * 180),
+    password: DEMO_CREDENTIALS.merchants.upayaCafe.password,
+    contact: { phoneNumber: '09171112233', viberNumber: '09171112233', messengerUsername: 'upaya.cafe' },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    rateType: 'both',
+    isBusinessMerchant: true,
+    merchantBusinessName: 'Upaya Cafe',
+    unlimitedGigsterScreening: true,
+    merchantPartnershipActive: true,
+  },
+  {
+    id: 3,
+    fullName: 'Salangi ka\'t magkape',
+    avatarUrl: null,
+    barangay: 'Brgy. Dapdap',
+    city: 'Bamban, Tarlac',
+    phoneVerified: true,
+    ratingAverage: 4.8,
+    ratingCount: 28,
+    email: 'salangi@kantojobs.ph',
+    phoneNumber: '09172223344',
+    bio: 'Local cafe in Bamban, Tarlac. Serving artisan coffee and local delicacies. Posting delivery and pickup gigs.',
+    skills: ['Business Management', 'Food Delivery', 'Customer Service'],
+    completedGigs: 65,
+    gigCoins: 8,
+    createdAt: hoursAgo(24 * 150),
+    password: DEMO_CREDENTIALS.merchants.salangiKape.password,
+    contact: { phoneNumber: '09172223344', viberNumber: '09172223344', messengerUsername: 'salangi.kape' },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    rateType: 'both',
+    isBusinessMerchant: true,
+    merchantBusinessName: 'Salangi ka\'t magkape',
+    unlimitedGigsterScreening: true,
+    merchantPartnershipActive: true,
+  },
+  {
+    id: 4,
+    fullName: 'The Modern Cafe',
+    avatarUrl: null,
+    barangay: 'Brgy. Cut-Cut I',
+    city: 'Bamban, Tarlac',
+    phoneVerified: true,
+    ratingAverage: 4.9,
+    ratingCount: 41,
+    email: 'modern@kantojobs.ph',
+    phoneNumber: '09173334455',
+    bio: 'Modern cafe in Bamban, Tarlac. Specialty coffee, pastries, and light meals. Posting delivery and errand gigs.',
+    skills: ['Business Management', 'Food Delivery', 'Customer Service'],
+    completedGigs: 92,
+    gigCoins: 12,
+    createdAt: hoursAgo(24 * 200),
+    password: DEMO_CREDENTIALS.merchants.modernCafe.password,
+    contact: { phoneNumber: '09173334455', viberNumber: '09173334455', messengerUsername: 'modern.cafe' },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    rateType: 'both',
+    isBusinessMerchant: true,
+    merchantBusinessName: 'The Modern Cafe',
+    unlimitedGigsterScreening: true,
+    merchantPartnershipActive: true,
+},
+  {
+    id: 5,
     fullName: 'Maria Santos',
     avatarUrl: null,
     barangay: 'Brgy. Poblacion',
@@ -79,7 +176,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'hourly',
   },
   {
-    id: 3,
+    id: 6,
     fullName: 'Ramon Villanueva',
     avatarUrl: null,
     barangay: 'Brgy. Dapdap',
@@ -101,7 +198,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'both',
   },
   {
-    id: 4,
+    id: 13,
     fullName: 'Liza Manalo',
     avatarUrl: null,
     barangay: 'Brgy. Cut-Cut I',
@@ -122,7 +219,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'per_gig',
   },
   {
-    id: 5,
+    id: 7,
     fullName: 'Paolo Reyes',
     avatarUrl: null,
     barangay: 'Brgy. Bel-Air',
@@ -144,7 +241,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'per_gig',
   },
   {
-    id: 6,
+    id: 8,
     fullName: 'Angela Cruz',
     avatarUrl: null,
     barangay: 'Brgy. Santo Domingo',
@@ -165,7 +262,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'hourly',
   },
   {
-    id: 7,
+    id: 9,
     fullName: 'Mark Aquino',
     avatarUrl: null,
     barangay: 'Brgy. Anupul',
@@ -187,7 +284,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'hourly',
   },
   {
-    id: 8,
+    id: 10,
     fullName: 'Tess Bautista',
     avatarUrl: null,
     barangay: 'Brgy. San Antonio',
@@ -208,7 +305,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'per_gig',
   },
   {
-    id: 9,
+    id: 11,
     fullName: 'Camille Soriano',
     avatarUrl: null,
     barangay: 'Brgy. Lourdes North West',
@@ -229,7 +326,7 @@ export const SEED_USERS: SeedUser[] = [
     rateType: 'hourly',
   },
   {
-    id: 10,
+    id: 12,
     fullName: 'Ernesto Bautista',
     avatarUrl: null,
     barangay: 'Brgy. Cutcut',
@@ -270,6 +367,11 @@ export interface SeedJob {
   images: string[]
   createdAt: string
   isNegotiable?: boolean
+  isMerchantGig?: boolean
+  isCustomerOrderDelivery?: boolean
+  merchantId?: number
+  merchantName?: string
+  merchantBoosted?: boolean
 }
 
 export const SEED_JOBS: SeedJob[] = [
@@ -291,7 +393,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig102/600/400",
     ],
     status: 'OPEN',
-    posterId: 4,
+    posterId: 6,
     createdAt: hoursAgo(0.5),
   },
   {
@@ -313,7 +415,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig103/600/400",
     ],
     status: 'OPEN',
-    posterId: 6,
+    posterId: 8,
     createdAt: hoursAgo(2),
   },
   {
@@ -334,7 +436,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig104/600/400",
     ],
     status: 'OPEN',
-    posterId: 2,
+    posterId: 4,
     createdAt: hoursAgo(5),
   },
   {
@@ -355,7 +457,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig105/600/400",
     ],
     status: 'OPEN',
-    posterId: 7,
+    posterId: 9,
     createdAt: hoursAgo(9),
   },
   {
@@ -377,7 +479,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig106/600/400",
     ],
     status: 'IN_PROGRESS',
-    posterId: 3,
+    posterId: 5,
     createdAt: hoursAgo(28),
   },
   {
@@ -398,7 +500,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig107/600/400",
     ],
     status: 'OPEN',
-    posterId: 8,
+    posterId: 10,
     createdAt: hoursAgo(20),
   },
   {
@@ -420,7 +522,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig108/600/400",
     ],
     status: 'OPEN',
-    posterId: 3,
+    posterId: 5,
     createdAt: hoursAgo(1.2),
   },
   {
@@ -441,7 +543,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig109/600/400",
     ],
     status: 'OPEN',
-    posterId: 5,
+    posterId: 7,
     createdAt: hoursAgo(14),
   },
   {
@@ -462,7 +564,7 @@ export const SEED_JOBS: SeedJob[] = [
       "https://picsum.photos/seed/gig110/600/400",
     ],
     status: 'OPEN',
-    posterId: 6,
+    posterId: 8,
     createdAt: hoursAgo(30),
   },
   {
@@ -488,45 +590,79 @@ export const SEED_JOBS: SeedJob[] = [
     createdAt: hoursAgo(1),
   },
   {
-    id: 111,
-    title: 'Fix ceiling fan & replace 2 outlets',
+    id: 114,
+    title: 'Upaya Cafe: Coffee delivery to Brgy. Anupul',
     description:
-      'Umuugong yung ceiling fan sa sala at may dalawang outlet na sunog na. Kailangan po licensed or experienced electrician.',
-    category: 'HOME_REPAIR',
+      'Deliver 2 cups of iced caramel macchiato and 1 blueberry cheesecake from Upaya Cafe to the customer in Brgy. Anupul, Bamban. Order already paid via GCash. Just pick up and deliver.',
+    category: 'ERRANDS_DELIVERY',
     compensationType: 'FIXED',
-    amount: 700,
-    paymentMethods: ['CASH'],
-    location: 0,
-    landmark: 'Purok 3, yellow house beside the sari-sari store',
-    timing: 'SCHEDULED',
-    scheduledAt: hoursFromNow(6),
-    estimatedDuration: '2-3 hours',
+    amount: 180,
+    paymentMethods: ['CASH', 'GCASH'],
+    location: 4,
+    landmark: 'Anupul Barangay Hall',
+    timing: 'URGENT',
+    scheduledAt: null,
+    estimatedDuration: '30 mins',
     images: [
-      "https://picsum.photos/seed/gig112/600/400",
+      "https://picsum.photos/seed/upaya1/600/400",
     ],
-    status: 'IN_PROGRESS',
-    posterId: 1,
-    createdAt: hoursAgo(26),
+    status: 'OPEN',
+    posterId: 2,
+    createdAt: hoursAgo(0.5),
+    isMerchantGig: true,
+    merchantId: 2,
+    merchantName: 'Upaya Cafe',
+    merchantBoosted: true,
   },
   {
-    id: 112,
-    title: 'Help set up chairs for barangay fiesta',
-    description: 'Setup of 200 monobloc chairs and tents for the Dolores fiesta.',
-    category: 'EVENTS',
+    id: 115,
+    title: 'Salangi ka\'t magkape: Pickup order for delivery',
+    description:
+      'Pick up 3 cups of signature brew and 2 ensaymada from Salangi ka\'t magkape in Brgy. Dapdap. Customer will pay COD. Deliver to Brgy. San Nicolas, Bamban.',
+    category: 'ERRANDS_DELIVERY',
     compensationType: 'FIXED',
-    amount: 500,
-    paymentMethods: ['CASH'],
-    location: 0,
-    landmark: 'Dolores Covered Court',
-    timing: 'SCHEDULED',
-    scheduledAt: hoursAgo(24 * 6),
-    estimatedDuration: '4 hours',
+    amount: 150,
+    paymentMethods: ['CASH', 'GCASH'],
+    location: 3,
+    landmark: 'Dapdap Health Center',
+    timing: 'URGENT',
+    scheduledAt: null,
+    estimatedDuration: '45 mins',
     images: [
-      "https://picsum.photos/seed/gig113/600/400",
+      "https://picsum.photos/seed/salangi1/600/400",
     ],
-    status: 'COMPLETED',
-    posterId: 1,
-    createdAt: hoursAgo(24 * 9),
+    status: 'OPEN',
+    posterId: 3,
+    createdAt: hoursAgo(1),
+    isMerchantGig: true,
+    merchantId: 3,
+    merchantName: 'Salangi ka\'t magkape',
+    merchantBoosted: true,
+  },
+  {
+    id: 116,
+    title: 'The Modern Cafe: Pastry delivery to Cut-Cut',
+    description:
+      'Deliver 1 box of assorted pastries (croissant, pain au chocolat, cinnamon roll) from The Modern Cafe to Brgy. Cut-Cut I, Bamban. Prepaid via Maya.',
+    category: 'ERRANDS_DELIVERY',
+    compensationType: 'FIXED',
+    amount: 200,
+    paymentMethods: ['CASH', 'GCASH', 'MAYA'],
+    location: 1,
+    landmark: 'Cut-Cut I Elementary School',
+    timing: 'URGENT',
+    scheduledAt: null,
+    estimatedDuration: '30 mins',
+    images: [
+      "https://picsum.photos/seed/modern1/600/400",
+    ],
+    status: 'OPEN',
+    posterId: 4,
+    createdAt: hoursAgo(0.8),
+    isMerchantGig: true,
+    merchantId: 4,
+    merchantName: 'The Modern Cafe',
+    merchantBoosted: true,
   },
 ]
 
@@ -551,7 +687,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1001,
     jobId: 110,
-    applicantId: 5,
+    applicantId: 7,
     pitch: 'Available right now. May sariling motor at helmet, ex-Lalamove rider. Kabisado ko ang Capas.',
     status: 'PENDING',
     createdAt: hoursAgo(0.6),
@@ -559,7 +695,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1002,
     jobId: 110,
-    applicantId: 7,
+    applicantId: 9,
     pitch: 'Taga-Bamban lang po ako, 10 mins away. May motor at insulated bag pa para sa kakanin.',
     status: 'PENDING',
     createdAt: hoursAgo(0.3),
@@ -567,7 +703,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1003,
     jobId: 111,
-    applicantId: 3,
+    applicantId: 5,
     pitch: 'Licensed electrician po ako, 12 years. I have my own tools and spare outlets kung kailangan.',
     status: 'ACCEPTED',
     createdAt: hoursAgo(24),
@@ -575,7 +711,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1004,
     jobId: 112,
-    applicantId: 6,
+    applicantId: 8,
     pitch: 'Sanay ako sa event setup, may kasama pa akong isa para mabilis.',
     status: 'ACCEPTED',
     createdAt: hoursAgo(24 * 8),
@@ -599,7 +735,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1007,
     jobId: 102,
-    applicantId: 3,
+    applicantId: 5,
     pitch: 'Plumber po ako, kaya ko rin ayusin ang lababo. Available after lunch.',
     status: 'PENDING',
     createdAt: hoursAgo(1.8),
@@ -607,7 +743,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1008,
     jobId: 103,
-    applicantId: 8,
+    applicantId: 10,
     pitch: 'Experienced in deep cleaning, I can bring a helper for free.',
     status: 'PENDING',
     createdAt: hoursAgo(3),
@@ -615,7 +751,7 @@ export const SEED_APPLICATIONS: SeedApplication[] = [
   {
     id: 1009,
     jobId: 104,
-    applicantId: 6,
+    applicantId: 8,
     pitch: 'Events host po ako! May sariling sound system pa.',
     status: 'PENDING',
     createdAt: hoursAgo(6),

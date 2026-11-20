@@ -113,6 +113,7 @@ export interface FeedFilters {
   timing?: JobTiming[]
   compensationTypes?: CompensationType[]
   isNegotiable?: boolean
+  isMerchantGig?: boolean
 }
 
 const DISTANCE_MAX = 25
@@ -126,6 +127,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
   const [selectedSchedule, setSelectedSchedule] = useState<JobTiming[]>(filters.timing ?? [])
   const [selectedCompensationTypes, setSelectedCompensationTypes] = useState<CompensationType[]>(filters.compensationTypes ?? [])
   const [isNegotiable, setIsNegotiable] = useState(filters.isNegotiable ?? false)
+  const [isMerchantGig, setIsMerchantGig] = useState(filters.isMerchantGig ?? false)
   const [selectedRateTypes, setSelectedRateTypes] = useState<RateType[]>(filters.rateType ?? [])
   const anytimeActive = selectedSchedule.length === 0
   const compensationAnyActive = selectedCompensationTypes.length === 0 || selectedCompensationTypes.length === 2
@@ -137,7 +139,8 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
     Number(mode === 'gigsters' && filters.rateType.length > 0) +
     Number(mode === 'gigs' && (filters.timing?.length ?? 0) > 0) +
     Number(mode === 'gigs' && !compensationAnyActive) +
-    Number(mode === 'gigs' && filters.isNegotiable)
+    Number(mode === 'gigs' && filters.isNegotiable) +
+    Number(mode === 'gigs' && filters.isMerchantGig)
 
   function toggleDay(day: string) {
     setSelectedDays((prev) => {
@@ -171,6 +174,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
     setSelectedCompensationTypes(filters.compensationTypes ?? [])
     setSelectedRateTypes(filters.rateType ?? [])
     setIsNegotiable(filters.isNegotiable ?? false)
+    setIsMerchantGig(filters.isMerchantGig ?? false)
     setOpen(true)
   }
 
@@ -183,6 +187,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
       timing: mode === 'gigs' ? selectedSchedule : filters.timing,
       compensationTypes: mode === 'gigs' && !compensationAnyActive ? selectedCompensationTypes : undefined,
       isNegotiable: mode === 'gigs' && isNegotiable ? true : undefined,
+      isMerchantGig: mode === 'gigs' && isMerchantGig ? true : undefined,
     })
     setOpen(false)
   }
@@ -373,7 +378,29 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                         />
                       </span>
                     </div>
-                </div>
+                    <div className="flex items-center justify-between gap-3 cursor-pointer select-none" role="switch" aria-checked={isMerchantGig} onClick={() => setIsMerchantGig((prev) => !prev)}>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground">Merchant gigs</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Show only merchant gigs</span>
+                      </div>
+                      <span
+                        className={cn(
+                          'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 transition-colors',
+                          isMerchantGig
+                            ? 'bg-orange-500 border-orange-500'
+                            : 'bg-slate-200 border-slate-200 dark:bg-slate-700 dark:border-slate-700',
+                        )}
+                        aria-hidden="true"
+                      >
+                        <span
+                          className={cn(
+                            'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out',
+                            isMerchantGig ? 'translate-x-5' : 'translate-x-0',
+                          )}
+                        />
+                      </span>
+                    </div>
+                 </div>
               </>
             ) : null}
             {mode === 'gigsters' ? (
@@ -474,6 +501,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                   setSelectedCompensationTypes([])
                   setSelectedRateTypes([])
                   setIsNegotiable(false)
+                  setIsMerchantGig(false)
                 }}
               >
                 Reset

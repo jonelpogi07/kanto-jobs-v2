@@ -38,6 +38,10 @@ export interface UserSummaryDTO {
   isNegotiable?: boolean
   availableDays?: string[]
   rateType?: RateType
+  isBusinessMerchant?: boolean
+  merchantBusinessName?: string
+  unlimitedGigsterScreening?: boolean
+  merchantPartnershipActive?: boolean
 }
 
 export interface UserDTO extends UserSummaryDTO {
@@ -51,6 +55,10 @@ export interface UserDTO extends UserSummaryDTO {
   isNegotiable?: boolean
   availableDays?: string[]
   rateType?: RateType
+  isBusinessMerchant?: boolean
+  merchantBusinessName?: string
+  unlimitedGigsterScreening?: boolean
+  merchantPartnershipActive?: boolean
 }
 
 /** Only returned by the API once an application has been SCREENING or ACCEPTED. */
@@ -87,6 +95,13 @@ export interface JobPostDTO {
   createdAt: string
   updatedAt: string
   isNegotiable?: boolean
+  partnerMerchantId?: string
+  partnerMerchantName?: string
+  isMerchantGig?: boolean
+  isCustomerOrderDelivery?: boolean
+  merchantId?: number
+  merchantName?: string
+  merchantBoosted?: boolean
 }
 
 export interface ApplicantDTO extends UserSummaryDTO {
@@ -221,6 +236,13 @@ export interface CreateJobPostRequest {
   estimatedDuration: string | null
   images: string[]
   isNegotiable?: boolean
+  partnerMerchantId?: string
+  partnerMerchantName?: string
+  isMerchantGig?: boolean
+  isCustomerOrderDelivery?: boolean
+  merchantId?: number
+  merchantName?: string
+  merchantBoosted?: boolean
 }
 
 export interface UpdateJobPostRequest {
@@ -240,6 +262,13 @@ export interface UpdateJobPostRequest {
   estimatedDuration: string | null
   images: string[]
   isNegotiable?: boolean
+  partnerMerchantId?: string
+  partnerMerchantName?: string
+  isMerchantGig?: boolean
+  isCustomerOrderDelivery?: boolean
+  merchantId?: number
+  merchantName?: string
+  merchantBoosted?: boolean
 }
 
 export interface CreateApplicationRequest {
@@ -265,6 +294,7 @@ export interface JobSearchParams {
   timing?: JobTiming[]
   compensationTypes?: CompensationType[]
   isNegotiable?: boolean
+  isMerchantGig?: boolean
   page?: number
   size?: number
   sort?: string

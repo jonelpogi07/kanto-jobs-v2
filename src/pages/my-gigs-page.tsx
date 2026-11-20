@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronDown, Inbox, Loader2, Lock, MapPin, MessageCircle,
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ApplicationStatusBadge, JobStatusBadge, NegotiableBadge, SkillTag, VerifiedBadge } from '@/components/badges'
+import { ApplicationStatusBadge, JobStatusBadge, NegotiableBadge, PartnerBadge, SkillTag, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -190,6 +190,8 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
           <Link to={`/jobs/${job.id}`} className="font-bold leading-snug hover:text-primary">
             {job.title}
           </Link>
+          {job.partnerMerchantName && <PartnerBadge name={job.partnerMerchantName} />}
+          {job.merchantName && !job.partnerMerchantName && <PartnerBadge name={job.merchantName} />}
           {job.status === 'OPEN' && (
             <Link
               to={`/jobs/${job.id}/edit`}
@@ -624,10 +626,14 @@ function AppliedTab() {
               </div>
               {app.job ? (
                 <>
-                  <Link to={`/jobs/${app.job.id}`} className="font-bold leading-snug hover:text-primary">
-                    {app.job.title}
-                  </Link>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                   <div className="flex items-center gap-2">
+                     <Link to={`/jobs/${app.job.id}`} className="font-bold leading-snug hover:text-primary">
+                       {app.job.title}
+                     </Link>
+                     {app.job.partnerMerchantName && <PartnerBadge name={app.job.partnerMerchantName} />}
+                     {app.job.merchantName && !app.job.partnerMerchantName && <PartnerBadge name={app.job.merchantName} />}
+                   </div>
+                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <UserAvatar user={app.job.poster} className="size-5 text-[9px]" />
                     <span className="truncate">{app.job.poster.fullName}</span>
                     <span aria-hidden="true">·</span>

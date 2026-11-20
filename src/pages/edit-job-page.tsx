@@ -177,6 +177,8 @@ export function EditJobPage() {
         estimatedDuration: duration.trim() || null,
         images,
         isNegotiable,
+        partnerMerchantId: job?.partnerMerchantId,
+        partnerMerchantName: job?.partnerMerchantName,
       })
       toast.success('Gig updated')
       await refreshAll()
@@ -208,7 +210,7 @@ export function EditJobPage() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value.slice(0, 80))}
-              placeholder="e.g. Pabili ng gamot sa Mercury Drug"
+              placeholder="e.g. Pabili ng kape sa Upaya Cafe"
               className="h-11 bg-card"
               aria-invalid={showErrors && Boolean(errors.title)}
             />

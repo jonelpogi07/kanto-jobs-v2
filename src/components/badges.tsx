@@ -1,4 +1,4 @@
-import { BadgeCheck, CalendarClock, Clock, RefreshCw, Zap } from 'lucide-react'
+import { BadgeCheck, Building2, CalendarClock, Clock, RefreshCw, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APPLICATION_STATUS_LABELS, JOB_STATUS_LABELS, PAYMENT_LABELS } from '@/lib/format'
 import type { ApplicationStatus, JobStatus, JobTiming, PaymentMethod } from '@/types'
@@ -98,6 +98,21 @@ export function NegotiableBadge({ className }: { className?: string }) {
     >
       <RefreshCw className="size-3" aria-hidden="true" />
       Negotiable
+    </span>
+  )
+}
+
+export function PartnerBadge({ name }: { name?: string }) {
+  return (
+    <span
+      className={cn(
+        pill,
+        'shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/10 dark:text-amber-300',
+      )}
+      aria-label="Partner merchant"
+    >
+      <Building2 className="size-3 shrink-0" aria-hidden="true" />
+      <span className="max-w-[160px] truncate">{name ?? 'Partner'}</span>
     </span>
   )
 }

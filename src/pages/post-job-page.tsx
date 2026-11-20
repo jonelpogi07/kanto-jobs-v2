@@ -10,10 +10,10 @@ import { PageHeader } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
 import { useRefreshAll } from '@/hooks/use-api'
 import { useLocation } from '@/lib/location'
+import { useAuth } from '@/lib/auth'
 import { CATEGORIES, CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, TIMING_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
-import { PARTNER_MERCHANTS, type PartnerMerchantTemplate } from '@/mocks/partner-merchants'
 import type { CompensationType, JobCategory, JobTiming, PaymentMethod } from '@/types'
 
 export function PostJobPage() {
@@ -36,6 +36,9 @@ function PostJobForm() {
   const navigate = useNavigate()
   const refreshAll = useRefreshAll()
   const { location, options } = useLocation()
+  const { user } = useAuth()
+
+  const isBusinessMerchant = user?.isBusinessMerchant === true && user?.merchantPartnershipActive === true
 
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<JobCategory | null>(null)
@@ -53,31 +56,6 @@ function PostJobForm() {
   const imagesScrollRef = useRef<HTMLDivElement>(null)
   const [submitting, setSubmitting] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
-  const [selectedMerchant, setSelectedMerchant] = useState<PartnerMerchantTemplate | null>(null)
-
-  function applyMerchant(m: PartnerMerchantTemplate) {
-    setSelectedMerchant(m)
-    setTitle(m.defaultTitle)
-    setCategory(m.category)
-    setDescription(m.defaultDetails)
-    setCompensationType(m.defaultCompensationType)
-    setAmount(String(m.defaultPay))
-    setIsNegotiable(m.defaultNegotiable)
-    setPaymentMethods(m.defaultPaymentMethods)
-    setShowErrors(false)
-  }
-
-  function clearMerchant() {
-    setSelectedMerchant(null)
-    setTitle('')
-    setCategory(null)
-    setDescription('')
-    setCompensationType('FIXED')
-    setAmount('')
-    setIsNegotiable(false)
-    setPaymentMethods(['CASH'])
-    setShowErrors(false)
-  }
 
   const amountNum = Number(amount)
   const errors = {
@@ -149,7 +127,7 @@ function PostJobForm() {
     })
   }
 
-  async function onSubmit(e: React.FormEvent) {
+async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (hasErrors) {
       setShowErrors(true)
@@ -158,6 +136,7 @@ function PostJobForm() {
     const loc = options.find((o) => `${o.barangay}|${o.city}` === locationKey) ?? location
     setSubmitting(true)
     try {
+      const isMerchantGig = isBusinessMerchant
       const job = await api.jobs.create({
         title: title.trim(),
         category: category!,
@@ -175,6 +154,10 @@ function PostJobForm() {
         estimatedDuration: duration.trim() || null,
         images,
         isNegotiable,
+        isMerchantGig,
+        merchantId: isMerchantGig ? user?.id : undefined,
+        merchantName: isMerchantGig ? user?.merchantBusinessName ?? user?.fullName : undefined,
+        merchantBoosted: isMerchantGig,
       })
       toast.success('Gig posted', { description: 'Nearby part-timers can now discover and pitch for it.' })
       await refreshAll()
@@ -203,34 +186,11 @@ function PostJobForm() {
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value.slice(0, 80))}
-          placeholder="e.g. Pabili ng gamot sa Mercury Drug"
+          placeholder="e.g. Pabili ng kape sa Upaya Cafe"
           className="h-11 bg-card"
           aria-invalid={showErrors && Boolean(errors.title)}
         />
         {err('title')}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="partner-merchant" className="text-xs font-medium text-muted-foreground">
-          Quick-fill with Partner Merchant (optional)
-        </Label>
-        <select
-          id="partner-merchant"
-          value={selectedMerchant?.id ?? ''}
-          onChange={(e) => {
-            const m = PARTNER_MERCHANTS.find((x) => x.id === e.target.value)
-            if (m) applyMerchant(m)
-            else clearMerchant()
-          }}
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="">None / Custom gig</option>
-          {PARTNER_MERCHANTS.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name} — {m.tagline}
-            </option>
-          ))}
-        </select>
       </div>
 
       <fieldset className="flex flex-col gap-2">

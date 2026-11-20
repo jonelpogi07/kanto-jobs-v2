@@ -19,7 +19,7 @@ import {
 import { buttonVariants } from '@/components/ui/button'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { ApplicationStatusBadge, JobStatusBadge, NegotiableBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
+import { ApplicationStatusBadge, JobStatusBadge, NegotiableBadge, PartnerBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { ContactBar } from '@/components/contact-bar'
 import { PitchSheet } from '@/components/pitch-sheet'
 import { RatingInline } from '@/components/rating'
@@ -115,10 +115,11 @@ export function JobDetailsPage() {
       </header>
 
       <article className="flex flex-col gap-5 px-4 pt-4 pb-28">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 relative">
           <div className="flex flex-wrap items-center gap-2">
             <UrgencyBadge timing={job.timing} />
             {job.status !== 'OPEN' ? <JobStatusBadge status={job.status} /> : null}
+            {(job.partnerMerchantName || job.merchantName) && <PartnerBadge name={job.partnerMerchantName ?? job.merchantName} />}
             <span className="text-xs text-muted-foreground">{`Posted ${timeAgo(job.createdAt)}`}</span>
           </div>
           <h1 className="text-balance text-2xl leading-tight font-extrabold">{job.title}</h1>
