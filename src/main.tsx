@@ -10,7 +10,37 @@ import { App } from './App'
 import '@flaticon/flaticon-uicons/css/solid/rounded.css'
 import './index.css'
 
-registerSW({ immediate: true })
+let refreshing = false
+
+registerSW({
+  immediate: true,
+  onNeedRefresh() {
+    if (refreshing) return
+    refreshing = true
+    // New SW detected; reload once it takes control
+    window.location.reload()
+  },
+})
+
+// Periodic update check when the app regains focus
+if ('serviceWorker' in navigator) {
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.update()
+      })
+    }
+  })
+}
+
+// Reload when a new service worker takes control of the page
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return
+    refreshing = true
+    window.location.reload()
+  })
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

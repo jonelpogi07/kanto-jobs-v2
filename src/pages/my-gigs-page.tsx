@@ -157,8 +157,9 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, expanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
+  const inProgress = job.status === 'IN_PROGRESS'
   const visibleApps = (applications ?? [])
-    .filter((a) => a.status !== 'REJECTED')
+    .filter((a) => a.status !== 'REJECTED' && (!inProgress || a.status === 'ACCEPTED'))
     .sort((a, b) => applicantRank(a) - applicantRank(b) || b.createdAt.localeCompare(a.createdAt))
   const panelId = `applicants-${job.id}`
   const refreshAll = useRefreshAll()
@@ -218,7 +219,11 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
         className="flex w-full items-center justify-between border-t border-border bg-secondary/50 px-4 py-3 text-sm font-semibold hover:bg-secondary"
       >
         <span>
-          {job.status === 'OPEN' ? `${job.applicantCount} applicant${job.applicantCount === 1 ? '' : 's'}` : 'Applicants'}
+          {job.status === 'OPEN'
+            ? `${job.applicantCount} applicant${job.applicantCount === 1 ? '' : 's'}`
+            : inProgress
+              ? 'Accepted applicant'
+              : 'Applicants'}
           {job.status === 'OPEN' && job.applicantCount > 0 ? (
             <span className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">Review</span>
           ) : null}
@@ -233,6 +238,10 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
           ) : !applications?.length ? (
             <p className="py-4 text-center text-sm text-muted-foreground">
               No pitches yet. Urgent gigs usually get pitches within the hour.
+            </p>
+          ) : visibleApps.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              {inProgress ? 'No accepted applicant for this gig yet.' : 'No active applicants for this gig.'}
             </p>
           ) : (
             <>

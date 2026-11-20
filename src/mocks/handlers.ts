@@ -736,8 +736,8 @@ completedGigs: gigster.completedGigs ?? 0,
       if (!app) throw new ApiError(404, 'Application not found.')
       const job = findJob(app.jobId)
       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can decline applicants.')
-      if (app.status !== 'PENDING' && app.status !== 'SCREENING') {
-        throw new ApiError(409, 'Only pending or screening applications can be declined.')
+      if (app.status !== 'PENDING' && app.status !== 'SCREENING' && app.status !== 'INVITED') {
+        throw new ApiError(409, 'Only pending, screening, or invited applications can be declined.')
       }
       app.status = 'REJECTED'
       save()
