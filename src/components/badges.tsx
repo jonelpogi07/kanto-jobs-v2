@@ -102,6 +102,21 @@ export function NegotiableBadge({ className }: { className?: string }) {
   )
 }
 
+export function BusinessBadge({ name }: { name?: string }) {
+  return (
+    <span
+      className={cn(
+        pill,
+        'shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/10 dark:text-amber-300',
+      )}
+      aria-label="Business merchant"
+    >
+      <Building2 className="size-3 shrink-0" aria-hidden="true" />
+      <span className="max-w-[160px] truncate">{name ?? 'Business'}</span>
+    </span>
+  )
+}
+
 export function PartnerBadge({ name }: { name?: string }) {
   return (
     <span

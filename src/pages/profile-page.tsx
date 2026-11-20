@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { SkillTag, VerifiedBadge } from '@/components/badges'
+import { SkillTag, VerifiedBadge, BusinessBadge } from '@/components/badges'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EditProfileDialog } from '@/components/edit-profile-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -89,14 +89,19 @@ function ProfileContent() {
             {`${user.barangay}, ${user.city}`}
           </p>
         </div>
-        {user.phoneVerified ? (
-          <VerifiedBadge />
-        ) : (
-          <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-            <ShieldAlert className="size-3.5" aria-hidden="true" />
-            Phone not verified
-          </span>
-        )}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {user.phoneVerified ? (
+            <VerifiedBadge />
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+              <ShieldAlert className="size-3.5" aria-hidden="true" />
+              Phone not verified
+            </span>
+          )}
+          {user.isBusinessMerchant === true && user.merchantPartnershipActive === true ? (
+            <BusinessBadge name={user.merchantBusinessName} />
+          ) : null}
+        </div>
         {user.bio ? <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p> : null}
         <Button variant="outline" className="mt-1 h-10 w-full" onClick={() => setEditing(true)}>
           <Pencil aria-hidden="true" />
