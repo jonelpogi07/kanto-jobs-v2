@@ -8,6 +8,7 @@ import type { JobPostDTO } from '@/types'
 
 export function JobCard({ job }: { job: JobPostDTO }) {
   const distance = formatDistance(job.distanceKm)
+  const merchantName = job.partnerMerchantName ?? job.merchantName ?? (job.isMerchantGig ? job.poster.merchantBusinessName ?? job.poster.fullName : undefined)
   return (
     <Link
       to={`/jobs/${job.id}`}
@@ -36,7 +37,7 @@ export function JobCard({ job }: { job: JobPostDTO }) {
           )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium text-muted-foreground">{CATEGORY_LABELS[job.category]}</p>
-            {(job.partnerMerchantName || job.merchantName) && <PartnerBadge name={job.partnerMerchantName ?? job.merchantName} />}
+            {(job.partnerMerchantName || job.merchantName || job.isMerchantGig) && <PartnerBadge name={merchantName} />}
             <h3 className="mt-0.5 text-pretty text-base leading-snug font-bold text-foreground group-hover:text-primary">
               {job.title}
             </h3>

@@ -106,16 +106,16 @@ export function LoginPage() {
         {mode === 'register' ? (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="fullName">Full name</Label>
-            <Input
-              id="fullName"
-              autoComplete="name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              minLength={2}
-              className="h-11 bg-card"
-              placeholder="Juan Dela Cruz"
-            />
+<Input
+                id="fullName"
+                autoComplete="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                minLength={2}
+                className="h-11 bg-card"
+                placeholder="Jonel Maniego"
+              />
           </div>
         ) : null}
 

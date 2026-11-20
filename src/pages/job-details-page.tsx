@@ -103,6 +103,7 @@ export function JobDetailsPage() {
   const isOwner = user?.id === job.poster.id
   const myApplication = myApps?.content.find((a) => a.jobId === job.id)
   const distance = formatDistance(job.distanceKm)
+  const merchantName = job.partnerMerchantName ?? job.merchantName ?? (job.isMerchantGig ? job.poster.merchantBusinessName ?? job.poster.fullName : undefined)
 
   return (
     <>
@@ -119,7 +120,7 @@ export function JobDetailsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <UrgencyBadge timing={job.timing} />
             {job.status !== 'OPEN' ? <JobStatusBadge status={job.status} /> : null}
-            {(job.partnerMerchantName || job.merchantName) && <PartnerBadge name={job.partnerMerchantName ?? job.merchantName} />}
+            {(job.partnerMerchantName || job.merchantName || job.isMerchantGig) && <PartnerBadge name={merchantName} />}
             <span className="text-xs text-muted-foreground">{`Posted ${timeAgo(job.createdAt)}`}</span>
           </div>
           <h1 className="text-balance text-2xl leading-tight font-extrabold">{job.title}</h1>

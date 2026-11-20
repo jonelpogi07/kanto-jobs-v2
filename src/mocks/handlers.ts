@@ -169,10 +169,21 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }): JobPostDTO {
   const { posterId, ...rest } = job
   const apps = db.applications.filter((a) => a.jobId === job.id && a.status !== 'CANCELLED')
-    return {
-      ...structuredClone(rest),
-      images: rest.images ?? [],
-      poster: toSummary(findUser(posterId)),
+  const poster = findUser(posterId)
+  // Derive merchant fields from the poster when not explicitly set on the gig,
+  // so gigs authored by an active business merchant always carry a merchant badge.
+  const isMerchantGig = rest.isMerchantGig ?? (poster.isBusinessMerchant && poster.merchantPartnershipActive === true)
+  const merchantId = rest.merchantId ?? (isMerchantGig ? posterId : undefined)
+  const merchantName = rest.merchantName ?? (isMerchantGig ? (poster.merchantBusinessName ?? poster.fullName) : undefined)
+  const merchantBoosted = rest.merchantBoosted ?? (isMerchantGig && poster.isBusinessMerchant ? true : false)
+  return {
+    ...structuredClone(rest),
+    images: rest.images ?? [],
+    poster: toSummary(poster),
+    isMerchantGig,
+    merchantId,
+    merchantName,
+    merchantBoosted,
     applicantCount: apps.length,
     acceptedApplicationId: apps.find((a) => a.status === 'ACCEPTED')?.id ?? null,
     distanceKm: coords

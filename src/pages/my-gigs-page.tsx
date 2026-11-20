@@ -190,8 +190,11 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
           <Link to={`/jobs/${job.id}`} className="font-bold leading-snug hover:text-primary">
             {job.title}
           </Link>
-          {job.partnerMerchantName && <PartnerBadge name={job.partnerMerchantName} />}
-          {job.merchantName && !job.partnerMerchantName && <PartnerBadge name={job.merchantName} />}
+          {job.partnerMerchantName || job.merchantName || job.isMerchantGig ? (
+            <PartnerBadge
+              name={job.partnerMerchantName ?? job.merchantName ?? (job.isMerchantGig ? job.poster.merchantBusinessName ?? job.poster.fullName : undefined)}
+            />
+          ) : null}
           {job.status === 'OPEN' && (
             <Link
               to={`/jobs/${job.id}/edit`}
