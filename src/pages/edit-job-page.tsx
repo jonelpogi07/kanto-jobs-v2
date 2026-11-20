@@ -255,7 +255,7 @@ export function EditJobPage() {
                   onClick={() => setCompensationType(t)}
                   className={cn('h-10 rounded-xl border px-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50', compensationType === t ? 'border-primary bg-primary-soft text-orange-800 dark:text-orange-300' : 'border-border bg-card text-foreground hover:border-foreground/30')}
                 >
-                  {t === 'FIXED' ? 'Fixed price' : 'Hourly rate'}
+                  {t === 'FIXED' ? 'Per gig' : 'Hourly rate'}
                 </button>
               ))}
             </div>

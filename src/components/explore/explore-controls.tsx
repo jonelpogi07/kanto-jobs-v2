@@ -313,7 +313,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
                     <span id="compensation-label" className="text-sm font-semibold">
-                      Compensation
+                      Rate type
                     </span>
                     <button
                       type="button"
@@ -329,9 +329,9 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                       Any
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="compensation-label">
+<div className="flex flex-nowrap gap-1" role="group" aria-labelledby="compensation-label">
                     {(['FIXED', 'HOURLY'] as const).map((value) => {
-                      const label = value === 'FIXED' ? 'Fixed price' : 'Hourly rate'
+                      const label = value === 'FIXED' ? 'Per Gig' : 'Per Hour'
                       const active = selectedCompensationTypes.includes(value)
                       return (
                         <button

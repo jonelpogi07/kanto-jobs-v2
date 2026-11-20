@@ -43,7 +43,7 @@ export function JobCard({ job }: { job: JobPostDTO }) {
           <div className="shrink-0 text-right">
             <p className="text-lg leading-tight font-extrabold text-success dark:text-emerald-400">{formatPeso(job.amount)}</p>
             <p className="text-[11px] font-medium text-muted-foreground">
-              {job.compensationType === 'HOURLY' ? 'per hour' : 'fixed'}
+              {job.compensationType === 'HOURLY' ? 'per hour' : 'per gig'}
             </p>
             {job.isNegotiable && <NegotiableBadge className="mt-1.5" />}
           </div>

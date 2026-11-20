@@ -225,7 +225,7 @@ function PostJobForm() {
               onClick={() => setCompensationType(t)}
               className={cn(chip, compensationType === t ? chipOn : chipOff)}
             >
-              {t === 'FIXED' ? 'Fixed price' : 'Hourly rate'}
+              {t === 'FIXED' ? 'Per gig' : 'Hourly rate'}
             </button>
           ))}
         </div>
