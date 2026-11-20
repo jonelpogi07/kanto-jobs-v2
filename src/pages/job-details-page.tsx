@@ -27,7 +27,7 @@ import { loginHref } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJob, useMyApplications, useRefreshAll } from '@/hooks/use-api'
 import { useAuth } from '@/lib/auth'
-import { CATEGORY_LABELS, formatDistance, formatPay, formatSchedule, timeAgo } from '@/lib/format'
+import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatDistance, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
 import type { JobStatus } from '@/types'
@@ -125,7 +125,7 @@ export function JobDetailsPage() {
           <div className="flex items-end justify-between gap-3 rounded-2xl bg-success-soft p-4">
             <div>
               <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-                {job.compensationType === 'HOURLY' ? 'Hourly rate' : 'Per gig'}
+                {COMPENSATION_TYPE_LABELS[job.compensationType]}
               </p>
               <p className="text-3xl font-extrabold text-success dark:text-emerald-400">{formatPay(job.amount, job.compensationType)}</p>
               {job.isNegotiable && <NegotiableBadge className="mt-2" />}

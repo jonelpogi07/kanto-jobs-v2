@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
 import { useRefreshAll } from '@/hooks/use-api'
 import { useLocation } from '@/lib/location'
-import { CATEGORIES, CATEGORY_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, TIMING_LABELS } from '@/lib/format'
+import { CATEGORIES, CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, TIMING_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
 import type { CompensationType, JobCategory, JobPostDTO, JobTiming, PaymentMethod } from '@/types'
@@ -40,7 +40,7 @@ export function EditJobPage() {
   const [images, setImages] = useState<string[]>([])
   const [isNegotiable, setIsNegotiable] = useState(false)
   const imagesScrollRef = useRef<HTMLDivElement>(null)
-  const [showErrors] = useState(false)
+  const [showErrors, setShowErrors] = useState(false)
 
   useEffect(() => {
     if (!Number.isFinite(jobId)) {
@@ -154,6 +154,7 @@ export function EditJobPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (hasErrors) {
+      setShowErrors(true)
       return
     }
     const loc = options.find((o) => `${o.barangay}|${o.city}` === locationKey) ?? location
@@ -255,7 +256,7 @@ export function EditJobPage() {
                   onClick={() => setCompensationType(t)}
                   className={cn('h-10 rounded-xl border px-3 text-sm font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50', compensationType === t ? 'border-primary bg-primary-soft text-orange-800 dark:text-orange-300' : 'border-border bg-card text-foreground hover:border-foreground/30')}
                 >
-                  {t === 'FIXED' ? 'Per gig' : 'Hourly rate'}
+                  {COMPENSATION_TYPE_LABELS[t]}
                 </button>
               ))}
             </div>

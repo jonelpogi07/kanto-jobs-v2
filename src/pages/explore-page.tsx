@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { Search, SearchX, X, MapPin, Star, ChevronDown, Calendar } from 'lucide-react'
+import { Search, SearchX, X, MapPin, ChevronDown, Calendar } from 'lucide-react'
 import { CategoryPills, FilterButton, LocationPicker, type FeedFilters } from '@/components/explore/explore-controls'
 import { BrandLogo } from '@/components/brand-logo'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
 import type { JobCategory, ApplicationDTO, RateType } from '@/types'
-import { UrgencyBadge } from '@/components/badges'
+import { UrgencyBadge, VerifiedBadge } from '@/components/badges'
+import { RatingInline } from '@/components/rating'
 
 type Gigster = {
   id: number
@@ -307,58 +308,54 @@ export function ExplorePage() {
             </div>
           </div>
           <ul className="flex flex-col gap-3 pb-4">
-            {filteredGigsters.map((g) => (
+{filteredGigsters.map((g) => (
               <li key={g.id} className="rounded-2xl border border-border bg-card p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
                     {g.avatarInitials}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold">{g.name}</span>
-                      {g.verified ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">Verified</span> : null}
+                      <span className="truncate font-bold text-base">{g.name}</span>
+                      {g.verified && <VerifiedBadge compact />}
                     </div>
-                    <div className="flex flex-col gap-0.5 text-xs">
-                     <span className="inline-flex items-center gap-1 whitespace-nowrap font-semibold text-foreground">
-                       <Star className="size-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
-                       {g.rating.toFixed(1)}
-                       <span className="font-normal text-muted-foreground">({g.ratingCount})</span>
-                     </span>
-                      <span className="text-muted-foreground">{g.completedGigs} gigs completed</span>
-                      <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <RatingInline average={g.rating} count={g.ratingCount} />
+                      <span>{g.completedGigs} gigs completed</span>
+                      <span className="flex items-center gap-1">
                         <MapPin className="size-3 shrink-0" aria-hidden="true" />
                         {g.barangay}
                       </span>
-                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                        <Calendar className="size-3 shrink-0" aria-hidden="true" />
-                        <span className="flex flex-wrap gap-0.5" aria-label="Available days">
-                          {g.availableDays.length === WEEKDAYS.length ? (
+                    </div>
+                    <div className="mt-1 flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                      <Calendar className="size-3 shrink-0" aria-hidden="true" />
+                      <span className="flex flex-wrap gap-0.5" aria-label="Available days">
+                        {g.availableDays.length === WEEKDAYS.length ? (
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
+                              'border-orange-200 bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-400/30',
+                            )}
+                          >
+                            Anytime
+                          </span>
+                        ) : g.availableDays.length === 0 ? null : (
+                          WEEKDAYS.filter((d) => g.availableDays.includes(d)).map((day) => (
                             <span
+                              key={day}
                               className={cn(
                                 'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                                'border-orange-200 bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-400/30',
+                                'border-orange-200 bg-orange-50 text-orange-600',
                               )}
                             >
-                              Anytime
+                              {day}
                             </span>
-                          ) : g.availableDays.length === 0 ? null : (
-                            WEEKDAYS.filter((d) => g.availableDays.includes(d)).map((day) => (
-                              <span
-                                key={day}
-                                className={cn(
-                                  'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                                  'border-orange-200 bg-orange-50 text-orange-600',
-                                )}
-                              >
-                                {day}
-                              </span>
-                            ))
-                          )}
-                        </span>
-                      </div>
+                          ))
+                        )}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className={cn(
                       'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap',
                       g.rateType === 'hourly'
@@ -371,7 +368,7 @@ export function ExplorePage() {
                     </span>
                   </div>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">{g.bio}</p>
+                <p className="mt-3 text-sm text-muted-foreground">{g.bio}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {g.skills.map((s) => (
                     <span key={s} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{s}</span>

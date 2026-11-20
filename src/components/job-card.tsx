@@ -3,7 +3,7 @@ import { MapPin, Users } from 'lucide-react'
 import { NegotiableBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { RatingInline } from '@/components/rating'
 import { UserAvatar } from '@/components/user-avatar'
-import { CATEGORY_LABELS, formatDistance, formatPeso, timeAgo } from '@/lib/format'
+import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatDistance, formatPeso, timeAgo } from '@/lib/format'
 import type { JobPostDTO } from '@/types'
 
 export function JobCard({ job }: { job: JobPostDTO }) {
@@ -43,7 +43,7 @@ export function JobCard({ job }: { job: JobPostDTO }) {
           <div className="shrink-0 text-right">
             <p className="text-lg leading-tight font-extrabold text-success dark:text-emerald-400">{formatPeso(job.amount)}</p>
             <p className="text-[11px] font-medium text-muted-foreground">
-              {job.compensationType === 'HOURLY' ? 'per hour' : 'per gig'}
+              {COMPENSATION_TYPE_LABELS[job.compensationType].toLowerCase()}
             </p>
             {job.isNegotiable && <NegotiableBadge className="mt-1.5" />}
           </div>

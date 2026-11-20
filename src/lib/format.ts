@@ -19,6 +19,12 @@ export const CATEGORY_LABELS: Record<JobCategory, string> = {
 
 export const CATEGORIES = Object.keys(CATEGORY_LABELS) as JobCategory[]
 
+/** Job-side compensation labels (UI copy for `CompensationType`). */
+export const COMPENSATION_TYPE_LABELS: Record<CompensationType, string> = {
+  FIXED: 'Per Gig',
+  HOURLY: 'Per Hour',
+}
+
 /** Ordered list of weekday keys used across the app for availability. */
 export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 

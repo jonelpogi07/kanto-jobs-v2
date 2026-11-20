@@ -603,7 +603,7 @@ function AppliedTab() {
       <ul className="flex flex-col gap-3">
         {filteredApps.length === 0 ? (
           <li className="rounded-2xl border border-dashed border-border px-6 py-10 text-center text-sm text-muted-foreground">
-            No {APPLICATION_STATUS_LABELS[filter as ApplicationStatus].toLowerCase()} applications.
+            No {filter !== 'ALL' ? APPLICATION_STATUS_LABELS[filter as ApplicationStatus].toLowerCase() : 'applications'}.
           </li>
         ) : null}
         {filteredApps.map((app) => (

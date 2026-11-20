@@ -7,7 +7,8 @@ import type { JobSearchParams } from '@/types'
 
 export function useJobSearch(params: Omit<JobSearchParams, 'lat' | 'lng'>) {
   const { coords } = useLocation()
-  const full: JobSearchParams = { ...params, ...coords, size: 50 }
+  const { availableDays: _days, rateType: _rt, ...jobParams } = params as any
+  const full: JobSearchParams = { ...jobParams, ...coords, size: 50 }
   return useSWR(['/jobs', full], () => api.jobs.search(full), { keepPreviousData: true })
 }
 

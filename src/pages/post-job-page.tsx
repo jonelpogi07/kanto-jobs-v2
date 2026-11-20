@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
 import { useRefreshAll } from '@/hooks/use-api'
 import { useLocation } from '@/lib/location'
-import { CATEGORIES, CATEGORY_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, TIMING_LABELS } from '@/lib/format'
+import { CATEGORIES, CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, TIMING_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
 import type { CompensationType, JobCategory, JobTiming, PaymentMethod } from '@/types'
@@ -225,7 +225,7 @@ function PostJobForm() {
               onClick={() => setCompensationType(t)}
               className={cn(chip, compensationType === t ? chipOn : chipOff)}
             >
-              {t === 'FIXED' ? 'Per gig' : 'Hourly rate'}
+              {COMPENSATION_TYPE_LABELS[t]}
             </button>
           ))}
         </div>

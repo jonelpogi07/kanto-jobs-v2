@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Slider } from '@/components/ui/slider'
 import { useLocation } from '@/lib/location'
-import { CATEGORIES, CATEGORY_LABELS, formatPeso, RATE_TYPE_LABELS, WEEKDAYS } from '@/lib/format'
+import { CATEGORIES, CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatPeso, RATE_TYPE_LABELS, TIMING_LABELS, WEEKDAYS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { JobCategory, JobTiming, CompensationType, RateType } from '@/types'
 
@@ -278,9 +278,9 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                   </div>
                   <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="schedule-label">
                     {([
-                      { value: 'URGENT', label: 'Today / Urgent' },
-                      { value: 'SCHEDULED', label: 'Scheduled' },
-                      { value: 'FLEXIBLE', label: 'Flexible' },
+                      { value: 'URGENT', label: TIMING_LABELS['URGENT'] },
+                      { value: 'SCHEDULED', label: TIMING_LABELS['SCHEDULED'] },
+                      { value: 'FLEXIBLE', label: TIMING_LABELS['FLEXIBLE'] },
                     ] as const).map(({ value, label }) => {
                       const active = selectedSchedule.includes(value)
                       return (
@@ -331,7 +331,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                   </div>
 <div className="flex flex-nowrap gap-1" role="group" aria-labelledby="compensation-label">
                     {(['FIXED', 'HOURLY'] as const).map((value) => {
-                      const label = value === 'FIXED' ? 'Per Gig' : 'Per Hour'
+                      const label = COMPENSATION_TYPE_LABELS[value]
                       const active = selectedCompensationTypes.includes(value)
                       return (
                         <button
