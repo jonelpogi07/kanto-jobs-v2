@@ -129,7 +129,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
   const compensationAnyActive = selectedCompensationTypes.length === 0 || selectedCompensationTypes.length === 2
   const activeCount =
     Number(filters.maxDistanceKm != null) +
-    Number(filters.minPay != null) +
+    Number(mode === 'gigs' && filters.minPay != null) +
     Number(mode === 'gigsters' && filters.availableDays?.length > 0) +
     Number(mode === 'gigs' && (filters.timing?.length ?? 0) > 0) +
     Number(mode === 'gigs' && !compensationAnyActive) +
@@ -164,7 +164,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
   function apply() {
     onChange({
       maxDistanceKm: distance >= DISTANCE_MAX ? undefined : distance,
-      minPay: minPay > 0 ? minPay : undefined,
+      minPay: mode === 'gigs' && minPay > 0 ? minPay : undefined,
       availableDays: selectedDays.length > 0 ? selectedDays : [],
       timing: mode === 'gigs' ? selectedSchedule : filters.timing,
       compensationTypes: mode === 'gigs' && !compensationAnyActive ? selectedCompensationTypes : undefined,
@@ -198,7 +198,7 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
             <SheetTitle>Filters</SheetTitle>
             <SheetDescription>
               {mode === 'gigsters'
-                ? 'Narrow down gigsters by distance, pay, and availability.'
+                ? 'Narrow down gigsters by distance and availability.'
                 : 'Narrow down gigs by distance, pay, and schedule.'}
             </SheetDescription>
           </SheetHeader>
@@ -221,24 +221,26 @@ export function FilterButton({ filters, onChange, mode = 'gigs' }: { filters: Fe
                 onValueChange={(v) => setDistance(Array.isArray(v) ? v[0] : v)}
               />
             </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span id="pay-label" className="text-sm font-semibold">
-                  Minimum pay
-                </span>
-                <span className="text-sm font-bold text-success">
-                  {minPay > 0 ? `${formatPeso(minPay)}+` : 'Any amount'}
-                </span>
+            {mode === 'gigs' ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span id="pay-label" className="text-sm font-semibold">
+                    Minimum pay
+                  </span>
+                  <span className="text-sm font-bold text-success">
+                    {minPay > 0 ? `${formatPeso(minPay)}+` : 'Any amount'}
+                  </span>
+                </div>
+                <Slider
+                  aria-labelledby="pay-label"
+                  min={0}
+                  max={PAY_MAX}
+                  step={50}
+                  value={minPay}
+                  onValueChange={(v) => setMinPay(Array.isArray(v) ? v[0] : v)}
+                />
               </div>
-              <Slider
-                aria-labelledby="pay-label"
-                min={0}
-                max={PAY_MAX}
-                step={50}
-                value={minPay}
-                onValueChange={(v) => setMinPay(Array.isArray(v) ? v[0] : v)}
-              />
-            </div>
+            ) : null}
             {mode === 'gigs' ? (
               <>
                 <div className="flex flex-col gap-3">

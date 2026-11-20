@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
 import type { JobCategory, ApplicationDTO } from '@/types'
-import { NegotiableBadge, UrgencyBadge } from '@/components/badges'
+import { UrgencyBadge } from '@/components/badges'
 
 type Gigster = {
   id: number
@@ -344,8 +344,6 @@ export function ExplorePage() {
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className="rounded-full bg-foreground px-2.5 py-1 text-xs font-bold text-background">{g.hourlyOrStartingRate}</span>
-                    {g.isNegotiable && <NegotiableBadge className="mt-0.5" />}
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{g.bio}</p>
