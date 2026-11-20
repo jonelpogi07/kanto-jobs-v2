@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
-import { Loader2, Plus, X, Calendar } from 'lucide-react'
+import { Loader2, MapPin, Plus, X, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useLocation, resolveApproximateLocation } from '@/lib/location'
 import {
   Dialog,
   DialogContent,
@@ -82,6 +83,9 @@ export function EditProfileDialog({
   const [availableDays, setAvailableDays] = useState<string[]>(() => sortDays(readWorkingDays(user.id)))
   const [rateType, setRateType] = useState<RateType>(() => (user.rateType ?? readRateType(user.id)))
   const [saving, setSaving] = useState(false)
+  const [detecting, setDetecting] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  const { setLocation } = useLocation()
 
   const anytimeActive = availableDays.length >= WEEKDAYS.length
 
@@ -98,6 +102,8 @@ export function EditProfileDialog({
     setAvailableDays(sortDays(readWorkingDays(user.id)))
     setRateType(user.rateType ?? readRateType(user.id))
     setSkillInput('')
+    setDetecting(false)
+    setLocationError(null)
   }, [open, user])
 
   const locationOptions = LOCATIONS.some((l) => `${l.barangay}|${l.city}` === locationKey)
@@ -109,6 +115,53 @@ export function EditProfileDialog({
     if (!skill || skills.length >= 8 || skills.some((s) => s.toLowerCase() === skill.toLowerCase())) return
     setSkills([...skills, skill])
     setSkillInput('')
+  }
+
+  async function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationError("Your browser doesn't support location access. Pick your barangay manually.")
+      return
+    }
+    setDetecting(true)
+    setLocationError(null)
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation!.getCurrentPosition(
+          resolve,
+          reject,
+          { enableHighAccuracy: false, timeout: 10_000, maximumAge: 0 },
+        )
+      })
+      const { latitude, longitude } = pos.coords
+      const match = resolveApproximateLocation(latitude, longitude, LOCATIONS)
+      if (!match) {
+        setLocationError("Couldn't match your location to a known barangay. Pick one manually.")
+        return
+      }
+      setLocationKey(`${match.barangay}|${match.city}`)
+      toast.success('Location detected', { description: `Suggested: ${match.barangay}, ${match.city}` })
+    } catch (err) {
+      const geoErr = err as GeolocationPositionError
+      switch (geoErr.code) {
+        case 1: // PERMISSION_DENIED
+          setLocationError(
+            'Location access denied. Enable it in your device or browser settings, then try again.',
+          )
+          break
+        case 2: // POSITION_UNAVAILABLE
+          setLocationError(
+            'Location is unavailable right now. Please try again or pick your barangay manually.',
+          )
+          break
+        case 3: // TIMEOUT
+          setLocationError('Location request timed out. Please try again.')
+          break
+        default:
+          setLocationError(geoErr.message || 'Could not detect your location. Pick your barangay manually.')
+      }
+    } finally {
+      setDetecting(false)
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -130,6 +183,8 @@ export function EditProfileDialog({
       localStorage.setItem(`profileWorkingDays:${user.id}`, JSON.stringify(sortedDays))
       localStorage.setItem(`profileRateType:${user.id}`, rateType)
       await mutate([ME_KEY, tokenStorage.get()], updated, { revalidate: false })
+      const matched = LOCATIONS.find((o) => o.barangay === barangay && o.city === city)
+      if (matched) setLocation(matched)
       onWorkingDaysChange?.(sortedDays)
       toast.success('Profile updated', { description: 'Your changes are now visible to posters and applicants.' })
       onOpenChange(false)
@@ -162,7 +217,10 @@ export function EditProfileDialog({
               id="ep-location"
               className={selectClass}
               value={locationKey}
-              onChange={(e) => setLocationKey(e.target.value)}
+              onChange={(e) => {
+                setLocationError(null)
+                setLocationKey(e.target.value)
+              }}
             >
               {locationOptions.map((l) => (
                 <option key={`${l.barangay}|${l.city}`} value={`${l.barangay}|${l.city}`}>
@@ -170,6 +228,30 @@ export function EditProfileDialog({
                 </option>
               ))}
             </select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={detecting || saving}
+              onClick={useCurrentLocation}
+            >
+              {detecting ? (
+                <>
+                  <Loader2 className="animate-spin size-3.5" aria-hidden="true" />
+                  Detecting location...
+                </>
+              ) : (
+                <>
+                  <MapPin className="size-3.5" aria-hidden="true" />
+                  Use current location
+                </>
+              )}
+            </Button>
+            {locationError && (
+              <p className="text-xs font-medium text-destructive" role="alert">
+                {locationError}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
