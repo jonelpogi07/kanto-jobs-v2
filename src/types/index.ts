@@ -33,6 +33,7 @@ export interface UserSummaryDTO {
   ratingCount: number
   completedGigs?: number
   isNegotiable?: boolean
+  availableDays?: string[]
 }
 
 export interface UserDTO extends UserSummaryDTO {
@@ -44,6 +45,7 @@ export interface UserDTO extends UserSummaryDTO {
   gigCoins: number
   createdAt: string
   isNegotiable?: boolean
+  availableDays?: string[]
 }
 
 /** Only returned by the API once an application has been SCREENING or ACCEPTED. */
@@ -193,6 +195,7 @@ export interface UpdateUserRequest {
   skills: string[]
   avatarUrl: string | null
   isNegotiable?: boolean
+  availableDays?: string[]
 }
 
 export interface CreateJobPostRequest {
@@ -253,6 +256,9 @@ export interface JobSearchParams {
   lng?: number
   maxDistanceKm?: number
   minPay?: number
+  timing?: JobTiming[]
+  compensationTypes?: CompensationType[]
+  isNegotiable?: boolean
   page?: number
   size?: number
   sort?: string

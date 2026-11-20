@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
-import { Loader2, Plus, RefreshCw, X } from 'lucide-react'
+import { Loader2, Plus, RefreshCw, X, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ME_KEY } from '@/lib/auth'
-import { SKILL_SUGGESTIONS } from '@/lib/format'
+import { SKILL_SUGGESTIONS, WEEKDAYS } from '@/lib/format'
 import { LOCATIONS } from '@/mocks/data'
 import { api } from '@/services/api'
 import { tokenStorage } from '@/services/token'
@@ -29,10 +29,12 @@ export function EditProfileDialog({
   user,
   open,
   onOpenChange,
+  onWorkingDaysChange,
 }: {
   user: UserDTO
   open: boolean
   onOpenChange: (open: boolean) => void
+  onWorkingDaysChange?: (days: string[]) => void
 }) {
   const { mutate } = useSWRConfig()
   const [fullName, setFullName] = useState(user.fullName)
@@ -41,7 +43,16 @@ export function EditProfileDialog({
   const [skills, setSkills] = useState(user.skills)
   const [skillInput, setSkillInput] = useState('')
   const [isNegotiable, setIsNegotiable] = useState(user.isNegotiable ?? false)
+  const [availableDays, setAvailableDays] = useState<string[]>(
+    user.availableDays && user.availableDays.length > 0 ? user.availableDays : [...WEEKDAYS],
+  )
   const [saving, setSaving] = useState(false)
+
+  const anytimeActive = availableDays.length >= WEEKDAYS.length
+
+  function toggleAnytime() {
+    setAvailableDays(anytimeActive ? [] : [...WEEKDAYS])
+  }
 
   const locationOptions = LOCATIONS.some((l) => `${l.barangay}|${l.city}` === locationKey)
     ? LOCATIONS
@@ -67,8 +78,12 @@ export function EditProfileDialog({
         skills,
         avatarUrl: user.avatarUrl,
         isNegotiable,
+        availableDays,
       })
+      localStorage.setItem(`profileWorkingDays:${user.id}`, JSON.stringify(availableDays))
       await mutate([ME_KEY, tokenStorage.get()], updated, { revalidate: false })
+      onWorkingDaysChange?.(availableDays)
+      localStorage.setItem(`profileWorkingDays:${user.id}`, JSON.stringify(availableDays))
       toast.success('Profile updated', { description: 'Your changes are now visible to posters and applicants.' })
       onOpenChange(false)
     } catch (err) {
@@ -194,6 +209,54 @@ export function EditProfileDialog({
                 Rate is negotiable
               </button>
               <span className="text-[11px] text-muted-foreground">Open to counter-offers from clients</span>
+            </div>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <legend className="mb-0 text-sm font-medium flex items-center gap-1.5">
+                <Calendar className="size-3.5" aria-hidden="true" />
+                Working days
+              </legend>
+              <button
+                type="button"
+                onClick={toggleAnytime}
+                className={cn(
+                  'shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                  anytimeActive
+                    ? 'border-orange-200 bg-orange-50 text-orange-600'
+                    : 'border-border bg-card text-muted-foreground hover:border-foreground/30',
+                )}
+                aria-pressed={anytimeActive}
+              >
+                Anytime
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">Select the days you're available for gigs</p>
+            <div className="flex flex-nowrap gap-1" role="group" aria-label="Working days">
+              {WEEKDAYS.map((day) => {
+                const active = availableDays.includes(day)
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() =>
+                      setAvailableDays((prev) =>
+                        prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+                      )
+                    }
+                    className={cn(
+                      'shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                      active
+                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                        : 'border-border bg-card text-foreground hover:border-foreground/30',
+                    )}
+                    aria-pressed={active}
+                  >
+                    {day}
+                  </button>
+                )
+              })}
             </div>
           </fieldset>
 

@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { Search, SearchX, X, MapPin, Star, ChevronDown } from 'lucide-react'
+import { Search, SearchX, X, MapPin, Star, ChevronDown, Calendar } from 'lucide-react'
 import { CategoryPills, FilterButton, LocationPicker, type FeedFilters } from '@/components/explore/explore-controls'
 import { BrandLogo } from '@/components/brand-logo'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -9,7 +9,7 @@ import { JobCard, JobCardSkeleton } from '@/components/job-card'
 import { UserAvatar } from '@/components/user-avatar'
 import { buttonVariants } from '@/components/ui/button'
 import { useJobSearch, useMyJobs, useRefreshAll } from '@/hooks/use-api'
-import { formatPay, formatSchedule } from '@/lib/format'
+import { formatPay, formatSchedule, WEEKDAYS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
@@ -30,17 +30,18 @@ type Gigster = {
   hourlyOrStartingRate: string
   phone: string
   isNegotiable: boolean
+  availableDays: string[]
 }
 
 const GIGSTERS: Gigster[] = [
-  { id: 1, name: 'Ramon Villanueva', avatarInitials: 'RV', barangay: 'Brgy. San Jose', rating: 4.8, ratingCount: 36, completedGigs: 42, verified: true, bio: 'Reliable errands & delivery runner. May sariling motor.', skills: ['ERRANDS_DELIVERY'], hourlyOrStartingRate: '₱150/hr', phone: '09171234567', isNegotiable: true },
-  { id: 2, name: 'Mark Aquino', avatarInitials: 'MA', barangay: 'Brgy. Maligaya', rating: 4.6, ratingCount: 22, completedGigs: 28, verified: true, bio: 'Home repair & handyman. May sariling tools.', skills: ['HOME_REPAIR'], hourlyOrStartingRate: '₱500/job', phone: '09181234567', isNegotiable: true },
-  { id: 3, name: 'Paolo Reyes', avatarInitials: 'PR', barangay: 'Brgy. Bagong Silang', rating: 4.9, ratingCount: 52, completedGigs: 61, verified: true, bio: 'Cleaning specialist. Detalyado at masipag.', skills: ['CLEANING'], hourlyOrStartingRate: '₱300/job', phone: '09191234567', isNegotiable: true },
-  { id: 4, name: 'Angela Cruz', avatarInitials: 'AC', barangay: 'Brgy. Tandang Sora', rating: 4.7, ratingCount: 29, completedGigs: 35, verified: false, bio: 'Event assistant & admin support.', skills: ['EVENTS', 'DIGITAL_ADMIN'], hourlyOrStartingRate: '₱200/hr', phone: '09201234567', isNegotiable: false },
-  { id: 5, name: 'Jose Dela Cruz', avatarInitials: 'JD', barangay: 'Brgy. Commonwealth', rating: 4.5, ratingCount: 16, completedGigs: 19, verified: true, bio: 'Errands, delivery, at minor repairs.', skills: ['ERRANDS_DELIVERY', 'HOME_REPAIR'], hourlyOrStartingRate: '₱180/hr', phone: '09211234567', isNegotiable: false },
-  { id: 6, name: 'Maria Santos', avatarInitials: 'MS', barangay: 'Brgy. Fairview', rating: 4.8, ratingCount: 45, completedGigs: 53, verified: true, bio: 'Cleaning at home organizing expert.', skills: ['CLEANING'], hourlyOrStartingRate: '₱350/job', phone: '09221234567', isNegotiable: false },
-  { id: 7, name: 'Camille Soriano', avatarInitials: 'CS', barangay: 'Brgy. Lourdes North West', rating: 5.0, ratingCount: 3, completedGigs: 3, verified: true, bio: 'Detail-oriented college honor student. Fast and reliable for tutoring & encoding.', skills: ['DIGITAL_ADMIN'], hourlyOrStartingRate: '₱250/hr', phone: '09170000001', isNegotiable: false },
-  { id: 8, name: 'Ernesto Bautista', avatarInitials: 'EB', barangay: 'Brgy. Cutcut', rating: 3.9, ratingCount: 74, completedGigs: 95, verified: true, bio: 'Veteran all-around helper in Pampanga & Tarlac. 95+ completed errands & repairs.', skills: ['ERRANDS_DELIVERY', 'HOME_REPAIR'], hourlyOrStartingRate: '₱150/hr', phone: '09170000002', isNegotiable: true },
+  { id: 1, name: 'Ramon Villanueva', avatarInitials: 'RV', barangay: 'Brgy. San Jose', rating: 4.8, ratingCount: 36, completedGigs: 42, verified: true, bio: 'Reliable errands & delivery runner. May sariling motor.', skills: ['ERRANDS_DELIVERY'], hourlyOrStartingRate: '₱150/hr', phone: '09171234567', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+  { id: 2, name: 'Mark Aquino', avatarInitials: 'MA', barangay: 'Brgy. Maligaya', rating: 4.6, ratingCount: 22, completedGigs: 28, verified: true, bio: 'Home repair & handyman. May sariling tools.', skills: ['HOME_REPAIR'], hourlyOrStartingRate: '₱500/job', phone: '09181234567', isNegotiable: true, availableDays: ['Mon', 'Wed', 'Fri', 'Sat'] },
+  { id: 3, name: 'Paolo Reyes', avatarInitials: 'PR', barangay: 'Brgy. Bagong Silang', rating: 4.9, ratingCount: 52, completedGigs: 61, verified: true, bio: 'Cleaning specialist. Detalyado at masipag.', skills: ['CLEANING'], hourlyOrStartingRate: '₱300/job', phone: '09191234567', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] },
+  { id: 4, name: 'Angela Cruz', avatarInitials: 'AC', barangay: 'Brgy. Tandang Sora', rating: 4.7, ratingCount: 29, completedGigs: 35, verified: false, bio: 'Event assistant & admin support.', skills: ['EVENTS', 'DIGITAL_ADMIN'], hourlyOrStartingRate: '₱200/hr', phone: '09201234567', isNegotiable: false, availableDays: ['Fri', 'Sat', 'Sun'] },
+  { id: 5, name: 'Jose Dela Cruz', avatarInitials: 'JD', barangay: 'Brgy. Commonwealth', rating: 4.5, ratingCount: 16, completedGigs: 19, verified: true, bio: 'Errands, delivery, at minor repairs.', skills: ['ERRANDS_DELIVERY', 'HOME_REPAIR'], hourlyOrStartingRate: '₱180/hr', phone: '09211234567', isNegotiable: false, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+  { id: 6, name: 'Maria Santos', avatarInitials: 'MS', barangay: 'Brgy. Fairview', rating: 4.8, ratingCount: 45, completedGigs: 53, verified: true, bio: 'Cleaning at home organizing expert.', skills: ['CLEANING'], hourlyOrStartingRate: '₱350/job', phone: '09221234567', isNegotiable: false, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+  { id: 7, name: 'Camille Soriano', avatarInitials: 'CS', barangay: 'Brgy. Lourdes North West', rating: 5.0, ratingCount: 3, completedGigs: 3, verified: true, bio: 'Detail-oriented college honor student. Fast and reliable for tutoring & encoding.', skills: ['DIGITAL_ADMIN'], hourlyOrStartingRate: '₱250/hr', phone: '09170000001', isNegotiable: false, availableDays: ['Tue', 'Thu', 'Sat'] },
+  { id: 8, name: 'Ernesto Bautista', avatarInitials: 'EB', barangay: 'Brgy. Cutcut', rating: 3.9, ratingCount: 74, completedGigs: 95, verified: true, bio: 'Veteran all-around helper in Pampanga & Tarlac. 95+ completed errands & repairs.', skills: ['ERRANDS_DELIVERY', 'HOME_REPAIR'], hourlyOrStartingRate: '₱150/hr', phone: '09170000002', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] },
 ]
 
 export function ExplorePage() {
@@ -49,7 +50,7 @@ export function ExplorePage() {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const [category, setCategory] = useState<JobCategory | undefined>()
-  const [filters, setFilters] = useState<FeedFilters>({ maxDistanceKm: undefined, minPay: undefined })
+  const [filters, setFilters] = useState<FeedFilters>({ maxDistanceKm: undefined, minPay: undefined, availableDays: [] })
   const [gigsterSort, setGigsterSort] = useState<'recommended' | 'rating' | 'completed'>('recommended')
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
@@ -101,6 +102,7 @@ export function ExplorePage() {
   const needle = deferredQuery.trim().toLowerCase()
   const filteredGigsters = GIGSTERS.filter((g) => {
     if (category && !g.skills.includes(category)) return false
+    if (filters.availableDays.length > 0 && !filters.availableDays.some((d) => g.availableDays.includes(d))) return false
     if (!needle) return true
     return [g.name, g.bio, g.barangay].some((f) => f.toLowerCase().includes(needle))
   }).sort((a, b) => {
@@ -190,7 +192,7 @@ export function ExplorePage() {
               className="h-11 w-full rounded-xl border border-border bg-card pr-3 pl-10 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
           </label>
-          <FilterButton filters={filters} onChange={setFilters} />
+          <FilterButton filters={filters} onChange={setFilters} mode={tab} />
         </div>
         <CategoryPills value={category} onChange={setCategory} />
         <div className="flex rounded-full bg-muted p-1">
@@ -321,6 +323,24 @@ export function ExplorePage() {
                         <MapPin className="size-3 shrink-0" aria-hidden="true" />
                         {g.barangay}
                       </span>
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                        <Calendar className="size-3 shrink-0" aria-hidden="true" />
+                        <span className="flex gap-0.5" aria-label="Available days">
+                          {WEEKDAYS.map((day) => (
+                            <span
+                              key={day}
+                              className={cn(
+                                'w-5 h-5 text-[10px] font-semibold rounded flex items-center justify-center',
+                                g.availableDays.includes(day)
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'bg-muted text-muted-foreground',
+                              )}
+                            >
+                              {day}
+                            </span>
+                          ))}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">

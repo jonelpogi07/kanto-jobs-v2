@@ -434,14 +434,19 @@ export const mockApi: KantoApi = {
   },
 
   jobs: {
-    async search({ q, category, lat, lng, maxDistanceKm, minPay, page, size }) {
+    async search({ q, category, lat, lng, maxDistanceKm, minPay, timing, compensationTypes, isNegotiable, page, size }) {
       await delay()
       const coords = lat != null && lng != null ? { lat, lng } : undefined
       const needle = q?.trim().toLowerCase()
+      const timings = Array.isArray(timing) ? timing : timing ? [timing] : []
+      const compTypes = Array.isArray(compensationTypes) ? compensationTypes : compensationTypes ? [compensationTypes] : []
       const results = db.jobs
         .filter((j) => j.status === 'OPEN')
         .filter((j) => !category || j.category === category)
         .filter((j) => minPay == null || j.amount >= minPay)
+        .filter((j) => timings.length === 0 || timings.includes(j.timing))
+        .filter((j) => compTypes.length === 0 || compTypes.includes(j.compensationType))
+        .filter((j) => !isNegotiable || j.isNegotiable === true)
         .filter(
           (j) =>
             !needle ||

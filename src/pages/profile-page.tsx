@@ -12,7 +12,8 @@ import { useUserReviews } from '@/hooks/use-api'
 import { useSWRConfig } from 'swr'
 import { useAuth, ME_KEY } from '@/lib/auth'
 import { tokenStorage } from '@/services/token'
-import { timeAgo } from '@/lib/format'
+import { timeAgo, WEEKDAYS } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { UserDTO } from '@/types'
 
 export function ProfilePage() {
@@ -31,12 +32,25 @@ function ProfileContent() {
   const { mutate } = useSWRConfig()
   const [editing, setEditing] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [workingDays, setWorkingDays] = useState<string[]>(() => readWorkingDays(user?.id))
   const fileRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     const saved = localStorage.getItem(`profileAvatar:${user?.id}`)
     if (saved && user && user.avatarUrl !== saved) {
       void mutate([ME_KEY, tokenStorage.get()], (u: any) => (u ? { ...u, avatarUrl: saved } : u), { revalidate: false })
     }
+  }, [user?.id])
+  useEffect(() => {
+    if (!user?.id) return
+    setWorkingDays(readWorkingDays(user.id))
+  }, [user?.id])
+  useEffect(() => {
+    if (!user?.id) return
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === `profileWorkingDays:${user.id}`) setWorkingDays(readWorkingDays(user.id))
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
   }, [user?.id])
   if (!user) return null
 
@@ -93,6 +107,8 @@ function ProfileContent() {
 
       <Stats user={user} />
 
+      <WorkingDays days={workingDays} />
+
       <section aria-labelledby="skills-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 id="skills-heading" className="text-sm font-bold">
           Skills
@@ -119,7 +135,14 @@ function ProfileContent() {
         Log out
       </Button>
 
-      {editing ? <EditProfileDialog user={user} open={editing} onOpenChange={setEditing} /> : null}
+      {editing ? (
+        <EditProfileDialog
+          user={user}
+          open={editing}
+          onOpenChange={setEditing}
+          onWorkingDaysChange={setWorkingDays}
+        />
+      ) : null}
       <ConfirmDialog
         open={confirmLogout}
         onOpenChange={setConfirmLogout}
@@ -193,4 +216,50 @@ function Reviews({ user }: { user: UserDTO }) {
       )}
     </section>
   )
+}
+
+function WorkingDays({ days }: { days: string[] }) {
+  return (
+    <section aria-labelledby="working-days-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+      <h2 id="working-days-heading" className="text-sm font-bold">
+        Working Days
+      </h2>
+      {days.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {WEEKDAYS.map((day) => {
+            const active = days.includes(day)
+            return (
+              <span
+                key={day}
+                className={cn(
+                  'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
+                  active
+                    ? 'border-orange-200 bg-orange-50 text-orange-600'
+                    : 'border-border bg-card text-muted-foreground',
+                )}
+              >
+                {day}
+              </span>
+            )
+          })}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">Not set</p>
+      )}
+    </section>
+  )
+}
+
+function readWorkingDays(id?: number): string[] {
+  if (typeof window === 'undefined' || !id) return [...WEEKDAYS]
+  try {
+    const raw = localStorage.getItem(`profileWorkingDays:${id}`)
+    if (raw) {
+      const parsed = JSON.parse(raw) as string[]
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    // ignore corrupt storage
+  }
+  return [...WEEKDAYS]
 }

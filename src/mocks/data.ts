@@ -52,6 +52,7 @@ export const SEED_USERS: SeedUser[] = [
     createdAt: hoursAgo(24 * 220),
     password: DEMO_CREDENTIALS.password,
     contact: { phoneNumber: '09171234567', viberNumber: '09171234567', messengerUsername: 'juan.delacruz' },
+    availableDays: ['Sat', 'Sun'],
   },
   {
     id: 2,
@@ -71,6 +72,7 @@ export const SEED_USERS: SeedUser[] = [
     createdAt: hoursAgo(24 * 400),
     password: 'password123',
     contact: { phoneNumber: '09281112233', viberNumber: '09281112233', messengerUsername: 'maria.designs' },
+    availableDays: ['Sat', 'Sun'],
   },
   {
     id: 3,
@@ -91,6 +93,7 @@ export const SEED_USERS: SeedUser[] = [
     isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09175556677', viberNumber: '09175556677', messengerUsername: null },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
   },
   {
     id: 4,
@@ -110,6 +113,7 @@ export const SEED_USERS: SeedUser[] = [
     createdAt: hoursAgo(24 * 150),
     password: 'password123',
     contact: { phoneNumber: '09398887766', viberNumber: null, messengerUsername: 'liza.manalo' },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
   },
   {
     id: 5,
@@ -130,6 +134,7 @@ export const SEED_USERS: SeedUser[] = [
     isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09451230987', viberNumber: '09451230987', messengerUsername: 'paoloreyes.rider' },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
   },
   {
     id: 6,
@@ -149,6 +154,7 @@ export const SEED_USERS: SeedUser[] = [
     createdAt: hoursAgo(24 * 300),
     password: 'password123',
     contact: { phoneNumber: '09184443322', viberNumber: '09184443322', messengerUsername: 'angelacruz.events' },
+    availableDays: ['Fri', 'Sat', 'Sun'],
   },
   {
     id: 7,
@@ -169,6 +175,7 @@ export const SEED_USERS: SeedUser[] = [
     isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09207771122', viberNumber: null, messengerUsername: 'mark.aquino' },
+    availableDays: ['Mon', 'Wed', 'Fri', 'Sat'],
   },
   {
     id: 8,
@@ -188,6 +195,7 @@ export const SEED_USERS: SeedUser[] = [
     createdAt: hoursAgo(24 * 90),
     password: 'password123',
     contact: { phoneNumber: '09363334455', viberNumber: '09363334455', messengerUsername: null },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
   },
   {
     id: 9,
@@ -207,6 +215,7 @@ export const SEED_USERS: SeedUser[] = [
     createdAt: hoursAgo(24 * 30),
     password: 'password123',
     contact: { phoneNumber: '09170000001', viberNumber: null, messengerUsername: null },
+    availableDays: ['Tue', 'Thu', 'Sat'],
   },
   {
     id: 10,
@@ -227,6 +236,7 @@ export const SEED_USERS: SeedUser[] = [
     isNegotiable: true,
     password: 'password123',
     contact: { phoneNumber: '09170000002', viberNumber: null, messengerUsername: null },
+    availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   },
 ]
 

@@ -18,6 +18,9 @@ export const CATEGORY_LABELS: Record<JobCategory, string> = {
 
 export const CATEGORIES = Object.keys(CATEGORY_LABELS) as JobCategory[]
 
+/** Ordered list of weekday keys used across the app for availability. */
+export const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
+
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Cash',
   GCASH: 'GCash',
