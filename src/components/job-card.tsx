@@ -3,11 +3,10 @@ import { MapPin, Users } from 'lucide-react'
 import { NegotiableBadge, PartnerBadge, PaymentPill, UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { RatingInline } from '@/components/rating'
 import { UserAvatar } from '@/components/user-avatar'
-import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatDistance, formatPeso, timeAgo } from '@/lib/format'
+import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatPeso, timeAgo } from '@/lib/format'
 import type { JobPostDTO } from '@/types'
 
 export function JobCard({ job }: { job: JobPostDTO }) {
-  const distance = formatDistance(job.distanceKm)
   const merchantName = job.partnerMerchantName ?? job.merchantName ?? (job.isMerchantGig ? job.poster.merchantBusinessName ?? job.poster.fullName : undefined)
   return (
     <Link
@@ -55,7 +54,6 @@ export function JobCard({ job }: { job: JobPostDTO }) {
           <span className="inline-flex items-center gap-1">
             <MapPin className="size-3.5 text-primary dark:text-orange-400" aria-hidden="true" />
             {job.barangay}, {job.city.split(',')[0]}
-            {distance ? <span className="font-semibold text-foreground">{` · ${distance}`}</span> : null}
           </span>
           <div className="flex gap-1">
             {job.paymentMethods.map((m) => (

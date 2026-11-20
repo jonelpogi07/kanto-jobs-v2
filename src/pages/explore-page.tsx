@@ -22,6 +22,7 @@ type Gigster = {
   name: string
   avatarInitials: string
   barangay: string
+  city: string
   rating: number
   ratingCount: number
   completedGigs: number
@@ -36,15 +37,15 @@ type Gigster = {
 }
 
 const GIGSTERS: Gigster[] = [
-  { id: 1, name: 'Aliza Nicole Santos', avatarInitials: 'AS', barangay: 'Brgy. Poblacion', rating: 4.9, ratingCount: 41, completedGigs: 48, verified: true, bio: 'Freelance graphic designer and weekend tutor for Grade 3-6 Math.', skills: ['DIGITAL_ADMIN'], hourlyOrStartingRate: '₱350/hr', phone: '09281112233', isNegotiable: false, availableDays: ['Sat', 'Sun'], rateType: 'hourly' },
-  { id: 2, name: 'Makee Tubon', avatarInitials: 'MT', barangay: 'Brgy. Dapdap', rating: 4.7, ratingCount: 58, completedGigs: 72, verified: true, bio: 'Licensed electrician, 12 years experience. Plumbing and carpentry din.', skills: ['HOME_REPAIR'], hourlyOrStartingRate: '₱500/job', phone: '09175556677', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], rateType: 'both' },
-  { id: 3, name: 'Jingky Maniego', avatarInitials: 'JM', barangay: 'Brgy. Cut-Cut I', rating: 4.6, ratingCount: 19, completedGigs: 22, verified: true, bio: 'Nanay ng tatlo, masipag maglinis at magluto. Available weekdays.', skills: ['CLEANING'], hourlyOrStartingRate: '₱300/job', phone: '09398887766', isNegotiable: false, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], rateType: 'per_gig' },
-  { id: 4, name: 'Ron Sabalvaro', avatarInitials: 'RS', barangay: 'Brgy. Bel-Air', rating: 4.5, ratingCount: 12, completedGigs: 14, verified: false, bio: 'Rider ng Lalamove dati. Mabilis at maingat sa delivery.', skills: ['ERRANDS_DELIVERY'], hourlyOrStartingRate: '₱150/hr', phone: '09451230987', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], rateType: 'per_gig' },
-  { id: 5, name: 'Jonel Maniego', avatarInitials: 'JM', barangay: 'Brgy. Dolores', rating: 4.8, ratingCount: 23, completedGigs: 31, verified: true, bio: 'Taga-Dolores since birth. May sariling motor at tools. Sideline ko ang delivery at simplen repairs tuwing weekends.', skills: ['ERRANDS_DELIVERY', 'HOME_REPAIR'], hourlyOrStartingRate: '₱180/hr', phone: '09171234567', isNegotiable: false, availableDays: ['Sat', 'Sun'], rateType: 'both' },
-  { id: 6, name: 'Nikko Nunag', avatarInitials: 'NN', barangay: 'Brgy. Santo Domingo', rating: 4.9, ratingCount: 27, completedGigs: 35, verified: true, bio: 'Events host and photographer. Pwede rin sa setup at decorations.', skills: ['EVENTS', 'DIGITAL_ADMIN'], hourlyOrStartingRate: '₱200/hr', phone: '09184443322', isNegotiable: false, availableDays: ['Fri', 'Sat', 'Sun'], rateType: 'hourly' },
-  { id: 7, name: 'Meleck Kimberly', avatarInitials: 'MK', barangay: 'Brgy. Anupul', rating: 4.4, ratingCount: 8, completedGigs: 9, verified: true, bio: 'College student (BS Accountancy). Mabilis sa Excel at data entry. May motor din.', skills: ['DIGITAL_ADMIN', 'ERRANDS_DELIVERY'], hourlyOrStartingRate: '₱120/hr', phone: '09207771122', isNegotiable: true, availableDays: ['Mon', 'Wed', 'Fri', 'Sat'], rateType: 'hourly' },
-  { id: 8, name: 'Edrich Mercado', avatarInitials: 'EM', barangay: 'Brgy. San Antonio', rating: 5.0, ratingCount: 6, completedGigs: 7, verified: true, bio: 'May-ari ng maliit na sari-sari store. Madalas maghanap ng helper.', skills: ['CLEANING'], hourlyOrStartingRate: '₱350/job', phone: '09363334455', isNegotiable: false, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], rateType: 'per_gig' },
-  { id: 9, name: 'Yza Rigor', avatarInitials: 'YR', barangay: 'Brgy. Lourdes North West', rating: 5.0, ratingCount: 5, completedGigs: 3, verified: true, bio: 'Detail-oriented college honor student. Fast and reliable for tutoring & encoding.', skills: ['DIGITAL_ADMIN'], hourlyOrStartingRate: '₱250/hr', phone: '09170000001', isNegotiable: false, availableDays: ['Tue', 'Thu', 'Sat'], rateType: 'hourly' },
+  { id: 1, name: 'Aliza Nicole Santos', avatarInitials: 'AS', barangay: 'Brgy. Poblacion', city: 'Capas', rating: 4.9, ratingCount: 41, completedGigs: 48, verified: true, bio: 'Freelance graphic designer and weekend tutor for Grade 3-6 Math.', skills: ['DIGITAL_ADMIN'], hourlyOrStartingRate: '₱350/hr', phone: '09281112233', isNegotiable: false, availableDays: ['Sat', 'Sun'], rateType: 'hourly' },
+  { id: 2, name: 'Makee Tubon', avatarInitials: 'MT', barangay: 'Brgy. Dapdap', city: 'Bamban', rating: 4.7, ratingCount: 58, completedGigs: 72, verified: true, bio: 'Licensed electrician, 12 years experience. Plumbing and carpentry din.', skills: ['HOME_REPAIR'], hourlyOrStartingRate: '₱500/job', phone: '09175556677', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], rateType: 'both' },
+  { id: 3, name: 'Jingky Maniego', avatarInitials: 'JM', barangay: 'Brgy. Cut-Cut I', city: 'Capas', rating: 4.6, ratingCount: 19, completedGigs: 22, verified: true, bio: 'Nanay ng tatlo, masipag maglinis at magluto. Available weekdays.', skills: ['CLEANING'], hourlyOrStartingRate: '₱300/job', phone: '09398887766', isNegotiable: false, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], rateType: 'per_gig' },
+  { id: 4, name: 'Ron Sabalvaro', avatarInitials: 'RS', barangay: 'Brgy. Bel-Air', city: 'Capas', rating: 4.5, ratingCount: 12, completedGigs: 14, verified: false, bio: 'Rider ng Lalamove dati. Mabilis at maingat sa delivery.', skills: ['ERRANDS_DELIVERY'], hourlyOrStartingRate: '₱150/hr', phone: '09451230987', isNegotiable: true, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], rateType: 'per_gig' },
+  { id: 5, name: 'Jonel Maniego', avatarInitials: 'JM', barangay: 'Brgy. Dolores', city: 'Capas', rating: 4.8, ratingCount: 23, completedGigs: 31, verified: true, bio: 'Taga-Dolores since birth. May sariling motor at tools. Sideline ko ang delivery at simplen repairs tuwing weekends.', skills: ['ERRANDS_DELIVERY', 'HOME_REPAIR'], hourlyOrStartingRate: '₱180/hr', phone: '09171234567', isNegotiable: false, availableDays: ['Sat', 'Sun'], rateType: 'both' },
+  { id: 6, name: 'Nikko Nunag', avatarInitials: 'NN', barangay: 'Brgy. Santo Domingo', city: 'Capas', rating: 4.9, ratingCount: 27, completedGigs: 35, verified: true, bio: 'Events host and photographer. Pwede rin sa setup at decorations.', skills: ['EVENTS', 'DIGITAL_ADMIN'], hourlyOrStartingRate: '₱200/hr', phone: '09184443322', isNegotiable: false, availableDays: ['Fri', 'Sat', 'Sun'], rateType: 'hourly' },
+  { id: 7, name: 'Meleck Kimberly', avatarInitials: 'MK', barangay: 'Brgy. Anupul', city: 'Bamban', rating: 4.4, ratingCount: 8, completedGigs: 9, verified: true, bio: 'College student (BS Accountancy). Mabilis sa Excel at data entry. May motor din.', skills: ['DIGITAL_ADMIN', 'ERRANDS_DELIVERY'], hourlyOrStartingRate: '₱120/hr', phone: '09207771122', isNegotiable: true, availableDays: ['Mon', 'Wed', 'Fri', 'Sat'], rateType: 'hourly' },
+  { id: 8, name: 'Edrich Mercado', avatarInitials: 'EM', barangay: 'Brgy. San Antonio', city: 'Bamban', rating: 5.0, ratingCount: 6, completedGigs: 7, verified: true, bio: 'May-ari ng maliit na sari-sari store. Madalas maghanap ng helper.', skills: ['CLEANING'], hourlyOrStartingRate: '₱350/job', phone: '09363334455', isNegotiable: false, availableDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], rateType: 'per_gig' },
+  { id: 9, name: 'Yza Rigor', avatarInitials: 'YR', barangay: 'Brgy. Lourdes North West', city: 'Capas', rating: 5.0, ratingCount: 5, completedGigs: 3, verified: true, bio: 'Detail-oriented college honor student. Fast and reliable for tutoring & encoding.', skills: ['DIGITAL_ADMIN'], hourlyOrStartingRate: '₱250/hr', phone: '09170000001', isNegotiable: false, availableDays: ['Tue', 'Thu', 'Sat'], rateType: 'hourly' },
 ]
 
 export function ExplorePage() {
@@ -325,7 +326,7 @@ export function ExplorePage() {
                       <span>{g.completedGigs} gigs completed</span>
                       <span className="flex items-center gap-1">
                         <MapPin className="size-3 shrink-0" aria-hidden="true" />
-                        {g.barangay}
+                        {g.barangay}, {g.city}
                       </span>
                     </div>
                     <div className="mt-1 flex items-center gap-1 text-slate-500 dark:text-slate-400">
@@ -444,12 +445,12 @@ export function ExplorePage() {
                          <div className="flex items-start justify-between gap-2">
                            <div className="min-w-0">
                              <p className="font-semibold truncate">{gig.title}</p>
-                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                               <span className="font-bold text-success dark:text-emerald-400">{formatPay(gig.amount, gig.compensationType)}</span>
-                               <UrgencyBadge timing={gig.timing} />
-                               <span>{gig.barangay}</span>
-                               <span>{formatSchedule(gig)}</span>
-                             </div>
+<div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span className="font-bold text-success dark:text-emerald-400">{formatPay(gig.amount, gig.compensationType)}</span>
+                                <UrgencyBadge timing={gig.timing} />
+                                <span>{gig.barangay}, {gig.city.split(',')[0]}</span>
+                                <span>{formatSchedule(gig)}</span>
+                              </div>
                            </div>
                            <div className="flex flex-col items-end gap-1">
                              {badge ? (

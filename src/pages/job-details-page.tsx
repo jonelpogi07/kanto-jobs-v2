@@ -27,7 +27,7 @@ import { loginHref } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJob, useMyApplications, useRefreshAll } from '@/hooks/use-api'
 import { useAuth } from '@/lib/auth'
-import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatDistance, formatPay, formatSchedule, timeAgo } from '@/lib/format'
+import { CATEGORY_LABELS, COMPENSATION_TYPE_LABELS, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
 import type { JobStatus } from '@/types'
@@ -102,7 +102,6 @@ export function JobDetailsPage() {
 
   const isOwner = user?.id === job.poster.id
   const myApplication = myApps?.content.find((a) => a.jobId === job.id)
-  const distance = formatDistance(job.distanceKm)
   const merchantName = job.partnerMerchantName ?? job.merchantName ?? (job.isMerchantGig ? job.poster.merchantBusinessName ?? job.poster.fullName : undefined)
 
   return (
@@ -166,7 +165,7 @@ export function JobDetailsPage() {
           <InfoRow
             icon={MapPin}
             label="Location"
-            value={`${job.barangay}, ${job.city}${distance ? ` · ${distance} away` : ''}`}
+            value={`${job.barangay}, ${job.city}`}
           />
           {job.landmark ? <InfoRow icon={Landmark} label="Landmark" value={job.landmark} /> : null}
           <InfoRow icon={Users} label="Applicants" value={`${job.applicantCount} sent a pitch`} />
