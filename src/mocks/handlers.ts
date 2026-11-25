@@ -211,7 +211,7 @@ function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: bool
     applicantCompletedGigs: applicant.completedGigs ?? 0,
     pitch: app.pitch,
     status: app.status,
-    applicantContact: contactUnlocked && viewerId === job.posterId ? { ...applicant.contact } : null,
+    applicantContact: app.status === 'ACCEPTED' && viewerId === job.posterId ? { ...applicant.contact } : null,
     posterContact: contactUnlocked && viewerId === app.applicantId ? { ...poster.contact } : null,
     createdAt: app.createdAt,
   }
@@ -729,19 +729,10 @@ completedGigs: gigster.completedGigs ?? 0,
       const job = findJob(app.jobId)
       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can screen applicants.')
       if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
-      if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be screened.')
-      const poster = findUser(job.posterId)
-      // Active business merchants with unlimitedGigsterScreening can screen without spending GigCoins
-      const hasUnlimitedScreening = poster.isBusinessMerchant && poster.unlimitedGigsterScreening === true
-      if (!hasUnlimitedScreening && (poster.gigCoins ?? 0) < 1) {
-        throw new ApiError(409, 'Insufficient GigCoins. Spend 1 GigCoin to screen an applicant.')
-      }
-      if (!hasUnlimitedScreening) {
-        poster.gigCoins = Math.max(0, (poster.gigCoins ?? 2) - 1)
-      }
-      app.status = 'SCREENING'
-      save()
-      return toApplicationDTO(app, userId, false)
+       if (app.status !== 'PENDING') throw new ApiError(409, 'Only pending applications can be screened.')
+       app.status = 'SCREENING'
+       save()
+       return toApplicationDTO(app, userId, false)
     },
     async accept(id) {
       await delay()

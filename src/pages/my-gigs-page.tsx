@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
 import { CheckCircle2, ChevronDown, Inbox, Loader2, Lock, MapPin, MessageCircle, Star, UserCheck, X } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -13,12 +14,12 @@ import { RatingInline } from '@/components/rating'
 import { RequireAuth } from '@/components/require-auth'
 import { ReviewDialog } from '@/components/review-dialog'
 import { UserAvatar } from '@/components/user-avatar'
-import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll } from '@/hooks/use-api'
+import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, CHAT_THREADS_KEY } from '@/hooks/use-api'
 import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
-import type { ApplicationDTO, ApplicationStatus, JobPostDTO } from '@/types'
+import type { ApplicationDTO, ApplicationStatus, ChatThreadDTO, JobPostDTO } from '@/types'
 
 export function MyGigsPage() {
   const { user } = useAuth()
@@ -90,6 +91,15 @@ function Empty({ title, body, cta, to }: { title: string; body: string; cta: str
 function PostedTab() {
   const { data, isLoading } = useMyJobs()
   const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL')
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const toggleExpanded = useCallback((id: number) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
   if (isLoading) return <Loading />
   const jobs = data?.content ?? []
   if (jobs.length === 0) {
@@ -127,7 +137,7 @@ function PostedTab() {
         <section key={g.label} aria-label={g.label} className="flex flex-col gap-3">
           <h2 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{`${g.label} (${g.items.length})`}</h2>
           {g.items.map((job) => (
-            <PostedJobCard key={job.id} job={job} />
+            <PostedJobCard key={job.id} job={job} isExpanded={expandedIds.has(job.id)} onToggle={() => toggleExpanded(job.id)} />
           ))}
         </section>
       ))}
@@ -150,12 +160,11 @@ function applicantRank(app: ApplicationDTO) {
   }
 }
 
-function PostedJobCard({ job }: { job: JobPostDTO }) {
-  const [expanded, setExpanded] = useState(false)
+function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpanded: boolean; onToggle: () => void }) {
   const [reviewOpen, setReviewOpen] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
-  const { data: applications, isLoading } = useJobApplications(job.id, expanded)
+  const { data: applications, isLoading } = useJobApplications(job.id, isExpanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
   const inProgress = job.status === 'IN_PROGRESS'
   const visibleApps = (applications ?? [])
@@ -218,8 +227,8 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
 
       <button
         type="button"
-        onClick={() => setExpanded((e) => !e)}
-        aria-expanded={expanded}
+        onClick={onToggle}
+        aria-expanded={isExpanded}
         aria-controls={panelId}
         className="flex w-full items-center justify-between border-t border-border bg-secondary/50 px-4 py-3 text-sm font-semibold hover:bg-secondary"
       >
@@ -233,10 +242,10 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
             <span className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">Review</span>
           ) : null}
         </span>
-        <ChevronDown className={cn('size-4 transition-transform', expanded && 'rotate-180')} aria-hidden="true" />
+        <ChevronDown className={cn('size-4 transition-transform', isExpanded && 'rotate-180')} aria-hidden="true" />
       </button>
 
-      {expanded ? (
+      {isExpanded ? (
         <div id={panelId} className="flex flex-col gap-3 border-t border-border p-4">
           {isLoading ? (
             <Loading />
@@ -295,7 +304,9 @@ function PostedJobCard({ job }: { job: JobPostDTO }) {
 
 function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const refreshAll = useRefreshAll()
-  const { user, spendGigCoin } = useAuth()
+  const navigate = useNavigate()
+  const { mutate: globalMutate } = useSWRConfig()
+  const { user } = useAuth()
   const [screening, setScreening] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [declining, setDeclining] = useState(false)
@@ -304,13 +315,11 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   const isInvited = app.status === 'INVITED'
   const isScreening = app.status === 'SCREENING'
   const isAccepted = app.status === 'ACCEPTED'
-  const contactUnlocked = isScreening || isAccepted
+  const contactUnlocked = isAccepted
+  const messagingUnlocked = isScreening || isAccepted
   const dimmed = !contactUnlocked && job.status !== 'OPEN'
 
   async function confirmScreenFn() {
-    if ((user?.gigCoins ?? 0) < 1) return
-    const ok = await spendGigCoin(1)
-    if (!ok) return
     setConfirmScreen(false)
     await screen()
   }
@@ -318,16 +327,44 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
   async function screen() {
     setScreening(true)
     try {
-      await api.applications.screen(app.id)
-      toast.success(`Screening ${app.applicant.fullName.split(' ')[0]}`, {
-        description: 'Direct messaging and contact details are now unlocked.',
-      })
-      await refreshAll()
+   await api.applications.screen(app.id)
+   toast.success(`Screening ${app.applicant.fullName.split(' ')[0]}`, {
+     description: 'Direct messaging and contact details are now unlocked.',
+   })
+   await refreshAll()
+   upsertScreeningThread()
+   void globalMutate(CHAT_THREADS_KEY)
     } catch (e) {
       toast.error('Could not screen applicant', { description: e instanceof Error ? e.message : 'Please try again.' })
     } finally {
       setScreening(false)
     }
+  }
+
+  function upsertScreeningThread() {
+    const viewerId = user?.id
+    if (viewerId == null) return
+    const posterId = job.poster.id
+    const isPoster = posterId === viewerId
+    const thread: ChatThreadDTO = {
+      id: app.id,
+      jobId: job.id,
+      jobTitle: job.title,
+      jobStatus: job.status,
+      applicationId: app.id,
+      applicationStatus: 'SCREENING',
+      posterId,
+      otherUser: isPoster ? app.applicant : job.poster,
+      lastMessage: null,
+      lastMessageAt: null,
+      unreadCount: 0,
+      updatedAt: app.createdAt,
+    }
+    globalMutate(CHAT_THREADS_KEY, (current: ChatThreadDTO[] | undefined) => {
+      const list = current ?? []
+      if (list.some((t) => t.id === thread.id)) return list
+      return [thread, ...list]
+    }, false)
   }
 
   async function accept() {
@@ -400,12 +437,16 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
       {contactUnlocked && app.applicantContact ? (
         <ContactBar contact={app.applicantContact} name={app.applicant.fullName} />
       ) : null}
-      {contactUnlocked ? (
-        <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
-          <MessageCircle aria-hidden="true" />
-          Message
-        </Link>
-      ) : isInvited && job.status === 'OPEN' ? (
+       {messagingUnlocked ? (
+         <button
+           type="button"
+           onClick={() => { void globalMutate('/chat/threads'); navigate(`/messages/${app.id}`) }}
+           className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}
+         >
+           <MessageCircle aria-hidden="true" />
+           Message
+         </button>
+       ) : isInvited && job.status === 'OPEN' ? (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-muted-foreground">
              🔒 Invite is still not accepted by the Gigster, please wait.
@@ -425,14 +466,14 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
                disabled
              >
                <Lock className="size-4 shrink-0" />
-               Screen (1 Coin)
+                Screen
              </Button>
            </div>
         </div>
       ) : app.status === 'PENDING' && job.status === 'OPEN' ? (
         <>
           <p className="text-xs text-muted-foreground">
-            🔒 Spend 1 GigCoin to screen this applicant and unlock chat &amp; contact details
+             🔒 Screen this applicant to unlock chat &amp; contact details
           </p>
           <div className="grid grid-cols-[1fr_1.35fr] gap-2">
             <Button
@@ -454,7 +495,7 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
               ) : (
                 <UserCheck className="size-4 shrink-0" aria-hidden="true" />
               )}
-              Screen (1 Coin)
+               Screen
             </Button>
           </div>
         </>
@@ -503,26 +544,15 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
       {confirmScreen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-card p-5">
-            {(user?.gigCoins ?? 0) >= 1 ? (
-              <>
-                <p className="text-sm font-semibold">
-                  Screen {app.applicant.fullName} using 1 GigCoin? This unlocks direct messaging and contact details so you
-                  can interview them before accepting.
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {user?.gigCoins ?? 0} GigCoins -&gt; {(user?.gigCoins ?? 0) - 1} GigCoins
-                </p>
-                <div className="mt-4 flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setConfirmScreen(false)}>Cancel</Button>
-                  <Button className="flex-1" onClick={confirmScreenFn} disabled={screening}>Confirm &amp; Spend 1 GigCoin</Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm font-semibold">Insufficient GigCoins</p>
-                <Button className="mt-4 w-full" onClick={() => setConfirmScreen(false)}>Top Up GigCoins</Button>
-              </>
-            )}
+            <>
+              <p className="text-sm font-semibold">
+                Screen {app.applicant.fullName}? This unlocks direct messaging and contact details so you can interview them before accepting.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmScreen(false)}>Cancel</Button>
+                <Button className="flex-1" onClick={confirmScreenFn} disabled={screening}>Confirm &amp; Screen</Button>
+              </div>
+            </>
           </div>
         </div>
       )}

@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
 import type { ChatMessageDTO } from '@/types'
 
+const LOOKUP_TIMEOUT_MS = 10_000
+
 export function ChatPage() {
   return (
     <RequireAuth title="Log in to chat">
@@ -28,14 +30,17 @@ function ChatConversation() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const parsedId = Number(raw)
-  const { data: threads, isLoading: threadsLoading } = useChatThreads()
+  const { data: threads, isLoading: threadsLoading, mutate: mutateThreads } = useChatThreads()
   const thread = threads?.find((t) => t.id === parsedId) ?? null
   const { data: messages, mutate, isLoading: messagesLoading } = useChatMessages(thread?.id ?? null)
+  const [checking, setChecking] = useState(false)
+  const [threadExists, setThreadExists] = useState<boolean | null>(null)
+  const [lookupError, setLookupError] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
   const { mutate: globalMutate } = useSWRConfig()
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const markedRead = useRef<number | null>(null)
   const count = messages?.length ?? 0
 
   useEffect(() => {
@@ -44,11 +49,64 @@ function ChatConversation() {
   }, [count, thread?.id])
 
   useEffect(() => {
-    if (thread?.id != null && messages !== undefined && markedRead.current !== thread.id) {
-      markedRead.current = thread.id
-      void globalMutate(CHAT_THREADS_KEY)
+    if (!Number.isFinite(parsedId)) {
+      setThreadExists(false)
+      setLookupError('Invalid conversation.')
+      return
     }
-  }, [thread?.id, messages, globalMutate])
+    if (thread) return
+    if (threadsLoading) return
+
+    let cancelled = false
+    let settled = false
+
+    const timer = setTimeout(() => {
+      if (!cancelled && !settled && checking) {
+        settled = true
+        setChecking(false)
+        setLookupError('The conversation is taking too long to load. Please try again.')
+      }
+    }, LOOKUP_TIMEOUT_MS)
+
+    ;(async () => {
+      try {
+        setChecking(true)
+        setLookupError(null)
+        void mutateThreads()
+        await api.chat.messages(parsedId)
+        if (!cancelled) {
+          settled = true
+          clearTimeout(timer)
+          setThreadExists(true)
+          setChecking(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          settled = true
+          clearTimeout(timer)
+          setChecking(false)
+          setThreadExists(false)
+          setLookupError(err instanceof Error ? err.message : 'Could not load the conversation.')
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [thread, threadsLoading, mutateThreads, parsedId, retryKey])
+
+  useEffect(() => {
+    if (threadExists === true && !thread) void mutateThreads()
+  }, [threadExists, thread, mutateThreads])
+
+  const retry = () => {
+    setLookupError(null)
+    setThreadExists(null)
+    setChecking(true)
+    setRetryKey((k) => k + 1)
+  }
 
   if (threadsLoading && !threads) {
     return (
@@ -60,13 +118,36 @@ function ChatConversation() {
   }
 
   if (!thread) {
+    if (checking || threadExists === null) {
+      return (
+        <div className="flex flex-1 items-center justify-center" role="status">
+          <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          <span className="sr-only">Loading conversation</span>
+        </div>
+      )
+    }
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
-        <p className="text-lg font-bold">Conversation not found</p>
-        <p className="text-sm text-muted-foreground">It may have been removed or is no longer available.</p>
-        <Link to="/messages" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
-          Back to inbox
-        </Link>
+        {lookupError ? (
+          <>
+            <p className="text-lg font-bold">Could not load conversation</p>
+            <p className="text-sm text-muted-foreground">{lookupError}</p>
+            <div className="flex gap-2">
+              <Button onClick={retry}>Retry</Button>
+              <Link to="/messages" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+                Back to inbox
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-lg font-bold">Conversation not found</p>
+            <p className="text-sm text-muted-foreground">It may have been removed or is no longer available.</p>
+            <Link to="/messages" className="text-sm font-semibold text-primary underline-offset-4 hover:underline">
+              Back to inbox
+            </Link>
+          </>
+        )}
       </div>
     )
   }

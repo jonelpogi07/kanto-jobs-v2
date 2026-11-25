@@ -70,7 +70,7 @@ export interface KantoApi {
   applications: {
     /** GET /applications/mine */
     mine(page?: number, size?: number): Promise<Page<ApplicationDTO>>
-    /** POST /applications/{id}/screen — unlocks chat & contact details (costs 1 GigCoin). */
+    /** POST /applications/{id}/screen — unlocks chat & contact details. */
     screen(id: number): Promise<ApplicationDTO>
     /** POST /applications/{id}/accept */
     accept(id: number): Promise<ApplicationDTO>
