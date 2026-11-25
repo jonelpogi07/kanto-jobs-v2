@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
 import { RatingInline } from '@/components/rating'
 import { RequireAuth } from '@/components/require-auth'
+import { ReportNoShowModal } from '@/components/report-no-show-modal'
 import { ReviewDialog } from '@/components/review-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, CHAT_THREADS_KEY } from '@/hooks/use-api'
@@ -162,6 +163,8 @@ function applicantRank(app: ApplicationDTO) {
 
 function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpanded: boolean; onToggle: () => void }) {
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reporting, setReporting] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, isExpanded)
@@ -262,12 +265,17 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
               {visibleApps.map((app) => (
                 <ApplicantRow key={app.id} app={app} job={job} />
               ))}
-              {job.status === 'IN_PROGRESS' && accepted ? (
-                <Button className="h-11 bg-success font-bold hover:bg-success/90" onClick={() => setReviewOpen(true)}>
-                  <CheckCircle2 aria-hidden="true" />
-                  Mark Completed & Rate
-                </Button>
-              ) : null}
+               {job.status === 'IN_PROGRESS' && accepted ? (
+                 <Button className="h-11 bg-success font-bold hover:bg-success/90" onClick={() => setReviewOpen(true)}>
+                   <CheckCircle2 aria-hidden="true" />
+                   Mark Completed & Rate
+                 </Button>
+               ) : null}
+               {job.status === 'IN_PROGRESS' && accepted ? (
+                 <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
+                   Report Cancelled / Gigster No-Show
+                 </Button>
+               ) : null}
             </>
           )}
           {canCancel && (
@@ -284,9 +292,26 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
         </div>
       ) : null}
 
-      {accepted ? (
-        <ReviewDialog job={job} worker={accepted.applicant} open={reviewOpen} onOpenChange={setReviewOpen} />
-      ) : null}
+       {accepted ? (
+         <ReviewDialog job={job} worker={accepted.applicant} open={reviewOpen} onOpenChange={setReviewOpen} />
+       ) : null}
+       <ReportNoShowModal
+         open={reportOpen}
+         onOpenChange={setReportOpen}
+         reasons={['Gigster Cancelled', 'Gigster No-Show']}
+         loading={reporting}
+         onSubmit={async (reason, note) => {
+           setReporting(true)
+           try {
+             await api.jobs.reportNoShow(job.id, { reason, note })
+             toast.success('Report submitted')
+             setReportOpen(false)
+             await refreshAll()
+           } finally {
+             setReporting(false)
+           }
+         }}
+       />
       <ConfirmDialog
         open={confirmCancel}
         onOpenChange={setConfirmCancel}
@@ -565,6 +590,8 @@ function AppliedTab() {
   const refreshAll = useRefreshAll()
   const navigate = useNavigate()
   const [cancelTarget, setCancelTarget] = useState<ApplicationDTO | null>(null)
+  const [reportTarget, setReportTarget] = useState<ApplicationDTO | null>(null)
+  const [reporting, setReporting] = useState(false)
   const [cancellingId, setCancellingId] = useState<number | null>(null)
   const [responding, setResponding] = useState<{ id: number; accept: boolean } | null>(null)
   const [filter, setFilter] = useState<'ALL' | ApplicationStatus>('ALL')
@@ -576,6 +603,18 @@ function AppliedTab() {
         ? apps.filter((a) => a.status === 'PENDING' || a.status === 'INVITED')
         : apps.filter((a) => a.status === filter)
   const cancelTargetTitle = useMemo(() => cancelTarget?.job?.title ?? 'this gig', [cancelTarget])
+
+  // Sync status changes across tabs/windows (mock DB writes to localStorage).
+  useEffect(() => {
+    const onStorage = () => refreshAll()
+    const onFocus = () => refreshAll()
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [refreshAll])
 
   if (isLoading) return <Loading />
   if (apps.length === 0) {
@@ -674,7 +713,9 @@ function AppliedTab() {
                   </div>
                 </>
               ) : null}
-              <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
+              {app.pitch && app.pitch !== 'Invited by client to apply for this gig.' ? (
+                <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-muted-foreground italic">{`"${app.pitch}"`}</p>
+              ) : null}
                {(app.status === 'SCREENING' || app.status === 'ACCEPTED') && app.posterContact && app.job ? (
                  app.job.status === 'COMPLETED' ? (
                    <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
@@ -724,12 +765,20 @@ function AppliedTab() {
                      </Button>
                    </div>
                  ) : null}
-                 {app.status === 'SCREENING' || app.status === 'ACCEPTED' ? (
-                   <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
-                     <MessageCircle aria-hidden="true" />
-                     {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
-                   </Link>
-                 ) : null}
+                  {app.status === 'SCREENING' || app.status === 'ACCEPTED' ? (
+                    <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
+                      <MessageCircle aria-hidden="true" />
+                      {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
+                    </Link>
+                  ) : null}
+                  {!app.reportedByMe &&
+                    app.status !== 'REJECTED' &&
+                    app.job?.status !== 'COMPLETED' &&
+                    (app.status === 'ACCEPTED' || app.job?.status === 'CANCELLED') ? (
+                    <Button variant="destructive" className="h-10 w-full font-bold" onClick={() => setReportTarget(app)}>
+                      Report Cancelled / Client No-Show
+                    </Button>
+                  ) : null}
                  {app.status === 'PENDING' || app.status === 'SCREENING' ? (
                    <Button
                      variant="destructive"
@@ -747,6 +796,24 @@ function AppliedTab() {
         ))}
       </ul>
 
+      <ReportNoShowModal
+        open={reportTarget != null}
+        onOpenChange={(o) => !o && setReportTarget(null)}
+        reasons={['Client Cancelled', 'Client No-Show']}
+        loading={reporting}
+        onSubmit={async (reason, note) => {
+          if (!reportTarget) return
+          setReporting(true)
+          try {
+            await api.applications.reportNoShow(reportTarget.id, { reason, note })
+            toast.success('Report submitted')
+            setReportTarget(null)
+            await refreshAll()
+          } finally {
+            setReporting(false)
+          }
+        }}
+      />
       <ConfirmDialog
         open={cancelTarget != null}
         onOpenChange={(open) => !open && setCancelTarget(null)}

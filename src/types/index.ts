@@ -123,6 +123,8 @@ export interface ApplicationDTO {
   /** Poster contact, visible to the applicant when SCREENING or ACCEPTED. */
   posterContact: ContactInfoDTO | null
   createdAt: string
+  /** True when the current viewer (applicant) already submitted a no-show report for this application. */
+  reportedByMe?: boolean
 }
 
 /**

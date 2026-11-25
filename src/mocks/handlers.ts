@@ -39,6 +39,7 @@ interface MockDb {
   applications: SeedApplication[]
   reviews: SeedReview[]
   messages: SeedMessage[]
+  reports: { id: number; reporterId: number; targetUserId: number; jobId: number; applicationId: number | null; reason: string; note?: string; createdAt: string }[]
 }
 
 const DB_KEY = 'kanto-jobs:mock-db:v2'
@@ -60,6 +61,7 @@ function seed(): MockDb {
     applications: structuredClone(SEED_APPLICATIONS),
     reviews: structuredClone(SEED_REVIEWS),
     messages: structuredClone(SEED_MESSAGES),
+    reports: [],
   }
 }
 
@@ -78,8 +80,9 @@ function load(): MockDb {
        const acceptedIds = new Set(
         parsed.applications.filter((a) => a.status === 'ACCEPTED' || a.status === 'SCREENING').map((a) => a.id),
       )
-      parsed.messages = (parsed.messages ?? []).filter((m) => acceptedIds.has(m.applicationId))
-      return parsed
+       parsed.messages = (parsed.messages ?? []).filter((m) => acceptedIds.has(m.applicationId))
+       parsed.reports = parsed.reports ?? []
+       return parsed
     } catch {
       localStorage.removeItem(DB_KEY)
     }
@@ -206,6 +209,7 @@ function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: bool
   const applicant = findUser(app.applicantId)
   const poster = findUser(job.posterId)
   const contactUnlocked = app.status === 'SCREENING' || app.status === 'ACCEPTED'
+  const reportedByMe = db.reports.some((r) => r.applicationId === app.id && r.reporterId === viewerId)
   return {
     id: app.id,
     jobId: app.jobId,
@@ -217,6 +221,7 @@ function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: bool
     applicantContact: app.status === 'ACCEPTED' && viewerId === job.posterId ? { ...applicant.contact } : null,
     posterContact: contactUnlocked && viewerId === app.applicantId ? { ...poster.contact } : null,
     createdAt: app.createdAt,
+    reportedByMe,
   }
 }
 
@@ -566,23 +571,44 @@ export const mockApi: KantoApi = {
       save()
       return toJobDTO(job)
     },
-    async cancel(id) {
-      await delay()
-      const userId = currentUserId()
-      const job = findJob(id)
-      if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can cancel this job.')
-      if (job.status === 'COMPLETED' || job.status === 'CANCELLED') {
-        throw new ApiError(409, 'This job is already finished.')
-      }
-      job.status = 'CANCELLED'
-      job.updatedAt = now()
-      // Reject all pending and screening applications
-      for (const app of db.applications) {
-        if (app.jobId === id && (app.status === 'PENDING' || app.status === 'SCREENING')) app.status = 'REJECTED'
-      }
-      save()
-      return toJobDTO(job)
-    },
+     async cancel(id) {
+       await delay()
+       const userId = currentUserId()
+       const job = findJob(id)
+       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can cancel this job.')
+       if (job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+         throw new ApiError(409, 'This job is already finished.')
+       }
+        job.status = 'CANCELLED'
+        job.updatedAt = now()
+        // Cancel accepted applications and reject pending/screening/invited ones
+        for (const app of db.applications) {
+          if (app.jobId !== id) continue
+          if (app.status === 'ACCEPTED') app.status = 'CANCELLED'
+          else if (app.status === 'PENDING' || app.status === 'SCREENING' || app.status === 'INVITED') app.status = 'REJECTED'
+        }
+        save()
+        return toJobDTO(job)
+      },
+     async reportNoShow(id, { reason, note }) {
+        await delay()
+        const userId = currentUserId()
+        const job = findJob(id)
+        if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can report.')
+        const accepted = db.applications.find((a) => a.jobId === id && a.status === 'ACCEPTED')
+        job.status = 'CANCELLED'
+        job.updatedAt = now()
+        for (const app of db.applications) {
+          if (app.jobId !== id) continue
+          if (app.status === 'ACCEPTED') app.status = 'CANCELLED'
+          else if (app.status === 'PENDING' || app.status === 'SCREENING' || app.status === 'INVITED') app.status = 'REJECTED'
+        }
+        if (accepted) {
+          db.reports.push({ id: nextId(db.reports), reporterId: userId, targetUserId: accepted.applicantId, jobId: id, applicationId: accepted.id, reason, note, createdAt: now() })
+        }
+        save()
+        return toJobDTO(job)
+      },
     async applications(jobId) {
       await delay(150)
       const userId = currentUserId()
@@ -820,9 +846,23 @@ completedGigs: gigster.completedGigs ?? 0,
         throw new ApiError(409, 'Only pending or screening applications can be cancelled.')
       }
       if (job.status !== 'OPEN') throw new ApiError(409, 'This gig is no longer accepting applicants.')
+        app.status = 'CANCELLED'
+        save()
+        return toApplicationDTO(app, userId, false)
+      },
+      async reportNoShow(id, { reason, note }) {
+       await delay()
+       const userId = currentUserId()
+       const app = db.applications.find((a) => a.id === id)
+       if (!app) throw new ApiError(404, 'Application not found.')
+       const job = findJob(app.jobId)
+       if (app.applicantId !== userId) throw new ApiError(403, 'Only the applicant can report.')
        app.status = 'CANCELLED'
+       job.status = 'CANCELLED'
+       job.updatedAt = now()
+       db.reports.push({ id: nextId(db.reports), reporterId: userId, targetUserId: job.posterId, jobId: job.id, applicationId: app.id, reason, note, createdAt: now() })
        save()
-       return toApplicationDTO(app, userId, false)
+       return toApplicationDTO(app, userId, true)
      },
      async respondToInvitation(id, accept) {
        await delay()

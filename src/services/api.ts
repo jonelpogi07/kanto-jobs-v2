@@ -69,6 +69,7 @@ const springBootApi: KantoApi = {
     mine: (page = 0, size = 20) => data(http.get<Page<JobPostDTO>>('/jobs/mine', { params: { page, size } })),
     complete: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/complete`)),
     cancel: (id) => data(http.post<JobPostDTO>(`/jobs/${id}/cancel`)),
+    reportNoShow: (id, req) => data(http.post<JobPostDTO>(`/jobs/${id}/report-no-show`, req)),
     applications: (jobId) => data(http.get<ApplicationDTO[]>(`/jobs/${jobId}/applications`)),
     apply: (jobId, req) => data(http.post<ApplicationDTO>(`/jobs/${jobId}/applications`, req)),
     inviteGigsterToGig: (gigId, gigster) => data(http.post<ApplicationDTO>(`/jobs/${gigId}/invite-gigster`, gigster)),
@@ -82,6 +83,7 @@ const springBootApi: KantoApi = {
     accept: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/accept`)),
     decline: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/decline`)),
     cancel: (id) => data(http.post<ApplicationDTO>(`/applications/${id}/cancel`)),
+    reportNoShow: (id, req) => data(http.post<ApplicationDTO>(`/applications/${id}/report-no-show`, req)),
     respondToInvitation: (id, accept) => data(http.post<ApplicationDTO>(`/applications/${id}/respond-invitation`, { accept })),
   },
   chat: {

@@ -68,6 +68,8 @@ export interface KantoApi {
     review(jobId: number, req: CreateReviewRequest): Promise<ReviewDTO>
     /** POST /jobs/{id}/cancel */
     cancel(id: number): Promise<JobPostDTO>
+    /** POST /jobs/{id}/report-no-show */
+    reportNoShow(id: number, req: { reason: string; note?: string }): Promise<JobPostDTO>
     /** POST /jobs/search-nearby-gigsters */
     searchNearbyGigsters(req: SearchNearbyGigstersRequest): Promise<SearchNearbyGigstersResponse>
   }
@@ -82,6 +84,8 @@ export interface KantoApi {
     decline(id: number): Promise<ApplicationDTO>
     /** POST /applications/{id}/cancel (applicant cancels their own application) */
     cancel(id: number): Promise<ApplicationDTO>
+    /** POST /applications/{id}/report-no-show */
+    reportNoShow(id: number, req: { reason: string; note?: string }): Promise<ApplicationDTO>
     /** POST /applications/{id}/respond-invitation */
     respondToInvitation(id: number, accept: boolean): Promise<ApplicationDTO>
   }
