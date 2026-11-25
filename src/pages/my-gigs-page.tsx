@@ -15,7 +15,7 @@ import { RequireAuth } from '@/components/require-auth'
 import { ReviewDialog } from '@/components/review-dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, CHAT_THREADS_KEY } from '@/hooks/use-api'
-import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo } from '@/lib/format'
+import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo, CATEGORY_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
@@ -430,7 +430,7 @@ function ApplicantRow({ app, job }: { app: ApplicationDTO; job: JobPostDTO }) {
       {app.applicant.skills.length ? (
         <div className="flex flex-wrap gap-1.5">
           {app.applicant.skills.map((s) => (
-            <SkillTag key={s}>{s}</SkillTag>
+            <SkillTag key={s}>{CATEGORY_LABELS[s as keyof typeof CATEGORY_LABELS] ?? s}</SkillTag>
           ))}
         </div>
       ) : null}

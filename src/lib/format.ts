@@ -65,23 +65,6 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   CANCELLED: 'Cancelled',
 }
 
-export const SKILL_SUGGESTIONS = [
-  'Motorcycle Rider',
-  'Home Repair',
-  'Tutoring',
-  'Graphic Design',
-  'Cleaning',
-  'Laundry',
-  'Cooking',
-  'Electrical',
-  'Plumbing',
-  'Events',
-  'Photography',
-  'Data Entry',
-  'Babysitting',
-  'Errands',
-]
-
 const peso = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP',

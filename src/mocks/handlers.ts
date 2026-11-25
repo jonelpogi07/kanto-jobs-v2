@@ -7,8 +7,10 @@ import type {
   ChatMessageDTO,
   ChatThreadDTO,
   JobPostDTO,
+  NearbyGigsterDTO,
   Page,
   ReviewDTO,
+  SearchNearbyGigstersRequest,
   UserDTO,
   UserSummaryDTO,
 } from '@/types'
@@ -24,6 +26,7 @@ import {
   type SeedReview,
   type SeedUser,
 } from './data'
+import { MOCK_GIGSTERS, type MockGigster } from './gigsters'
 
 /** Stored job shape: the DTO minus server-computed fields. */
 type JobRecord = Omit<JobPostDTO, 'poster' | 'applicantCount' | 'acceptedApplicationId' | 'distanceKm'> & {
@@ -705,6 +708,42 @@ completedGigs: gigster.completedGigs ?? 0,
       reviewee.ratingCount += 1
       save()
       return toReviewDTO(review)
+    },
+    async searchNearbyGigsters(req: SearchNearbyGigstersRequest) {
+      await delay()
+      const { latitude, longitude, maxDistanceKm = 10, category } = req
+      const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+        const toRad = (d: number) => (d * Math.PI) / 180
+        const dLat = toRad(lat2 - lat1)
+        const dLng = toRad(lng2 - lng1)
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
+        return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+      }
+      const getGigsterCoords = (g: MockGigster) => {
+        const loc = LOCATIONS.find((l) => l.barangay === g.barangay && l.city === g.city)
+        return loc ?? LOCATIONS[0]
+      }
+      const nearby = MOCK_GIGSTERS
+        .filter((g) => {
+          const loc = getGigsterCoords(g)
+          const dist = haversineKm(latitude, longitude, loc.latitude, loc.longitude)
+          return dist <= maxDistanceKm
+        })
+        .filter((g) => !category || g.skills.includes(category))
+        .map((g): NearbyGigsterDTO => ({
+          id: g.id,
+          fullName: g.name,
+          avatarUrl: null,
+          barangay: g.barangay,
+          city: g.city,
+          ratingAverage: g.rating,
+          ratingCount: g.ratingCount,
+          completedGigs: g.completedGigs,
+          phoneVerified: g.verified,
+          skills: g.skills,
+          isNegotiable: g.isNegotiable,
+        }))
+      return { gigsters: nearby, count: nearby.length }
     },
   },
 

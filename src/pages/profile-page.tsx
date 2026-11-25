@@ -12,7 +12,7 @@ import { useUserReviews } from '@/hooks/use-api'
 import { useSWRConfig } from 'swr'
 import { useAuth, ME_KEY } from '@/lib/auth'
 import { tokenStorage } from '@/services/token'
-import { timeAgo, WEEKDAYS } from '@/lib/format'
+import { timeAgo, WEEKDAYS, CATEGORY_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { UserDTO } from '@/types'
 
@@ -120,7 +120,7 @@ function ProfileContent() {
         {user.skills.length ? (
           <div className="flex flex-wrap gap-2">
             {user.skills.map((s) => (
-              <SkillTag key={s}>{s}</SkillTag>
+              <SkillTag key={s}>{CATEGORY_LABELS[s as keyof typeof CATEGORY_LABELS] ?? s}</SkillTag>
             ))}
           </div>
         ) : (

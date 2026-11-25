@@ -9,6 +9,8 @@ import type {
   JobPostDTO,
   Page,
   ReviewDTO,
+  SearchNearbyGigstersRequest,
+  SearchNearbyGigstersResponse,
   UserDTO,
 } from '@/types'
 import type { KantoApi } from './contract'
@@ -71,6 +73,7 @@ const springBootApi: KantoApi = {
     apply: (jobId, req) => data(http.post<ApplicationDTO>(`/jobs/${jobId}/applications`, req)),
     inviteGigsterToGig: (gigId, gigster) => data(http.post<ApplicationDTO>(`/jobs/${gigId}/invite-gigster`, gigster)),
     review: (jobId, req) => data(http.post<ReviewDTO>(`/jobs/${jobId}/reviews`, req)),
+    searchNearbyGigsters: (req: SearchNearbyGigstersRequest) => data(http.post<SearchNearbyGigstersResponse>('/jobs/search-nearby-gigsters', req)),
   },
   applications: {
     mine: (page = 0, size = 20) =>

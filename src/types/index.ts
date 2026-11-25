@@ -307,3 +307,29 @@ export interface LocationOption {
   latitude: number
   longitude: number
 }
+
+export interface NearbyGigsterDTO {
+  id: number
+  fullName: string
+  avatarUrl: string | null
+  barangay: string
+  city: string
+  ratingAverage: number
+  ratingCount: number
+  completedGigs: number
+  phoneVerified: boolean
+  skills: string[]
+  isNegotiable: boolean
+}
+
+export interface SearchNearbyGigstersRequest {
+  latitude: number
+  longitude: number
+  maxDistanceKm?: number
+  category?: JobCategory
+}
+
+export interface SearchNearbyGigstersResponse {
+  gigsters: NearbyGigsterDTO[]
+  count: number
+}

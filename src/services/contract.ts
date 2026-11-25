@@ -12,6 +12,8 @@ import type {
   Page,
   RegisterRequest,
   ReviewDTO,
+  SearchNearbyGigstersRequest,
+  SearchNearbyGigstersResponse,
   SendMessageRequest,
   UpdateJobPostRequest,
   UpdateUserRequest,
@@ -66,6 +68,8 @@ export interface KantoApi {
     review(jobId: number, req: CreateReviewRequest): Promise<ReviewDTO>
     /** POST /jobs/{id}/cancel */
     cancel(id: number): Promise<JobPostDTO>
+    /** POST /jobs/search-nearby-gigsters */
+    searchNearbyGigsters(req: SearchNearbyGigstersRequest): Promise<SearchNearbyGigstersResponse>
   }
   applications: {
     /** GET /applications/mine */
