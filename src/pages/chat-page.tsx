@@ -203,6 +203,7 @@ function ChatConversation() {
 
   const isLocked = thread.applicationStatus !== 'SCREENING' && thread.applicationStatus !== 'ACCEPTED'
   const isSystemThread =
+    thread.id < 0 ||
     Boolean(thread.hasReportNotice) ||
     Boolean(
       messages?.length &&
@@ -286,9 +287,13 @@ function ChatConversation() {
                       me={user?.id ?? -1}
                       onAppeal={handleReportAppeal}
                       appealed={appealedReportIds.has(Number(messageData(message).reportId))}
-                    />
-                  ) : message.type === 'appeal' ? (
-                    <AppealNotice key={message.id} message={message} />
+                     />
+                   ) : message.type === 'appeal' ? (
+                    Number(messageData(message).appellantId) === (user?.id ?? -1) ? (
+                      <AppealNotice key={message.id} message={message} />
+                    ) : (
+                      <SystemNotice key={message.id} message={{ ...message, body: 'An appeal was filed within the 24-hour window. An admin will review both sides before finalizing any GigCoin refund.' }} />
+                    )
                   ) : message.type === 'system' ? (
                     <SystemNotice key={message.id} message={message} />
                   ) : (
@@ -441,7 +446,9 @@ function ReportNotice({
          </Button>
        ) : isAppealed ? (
          <span className="mt-2 inline-flex items-center rounded-lg bg-amber-200 px-3 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-           ✓ Appeal Submitted — Under Review
+           {me === Number(data.targetUserId)
+             ? '✓ Appeal Submitted — Under Review'
+             : `${reporterRole === 'Client' ? 'Gigster' : 'Client'} Appealed — Under Review${reporterRole === 'Client' ? ' (Refund on Hold)' : ''}`}
          </span>
        ) : null}
     </div>

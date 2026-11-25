@@ -405,9 +405,28 @@ function assertChatParticipant(app: SeedApplication, userId: number) {
   }
 }
 
-function messagesFor(applicationId: number): SeedMessage[] {
+function messagesFor(threadId: number): SeedMessage[] {
+  if (threadId < 0) {
+    const reportId = Math.abs(threadId)
+    return db.messages
+      .filter((m) => {
+        const type = (m as any).__type
+        if (type !== 'report' && type !== 'appeal' && type !== 'system') return false
+        try {
+          const data = JSON.parse((m as any).__data ?? '{}')
+          return Number(data.reportId) === reportId
+        } catch {
+          return false
+        }
+      })
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  }
   return db.messages
-    .filter((m) => m.applicationId === applicationId)
+    .filter((m) => {
+      const type = (m as any).__type
+      if (type === 'report' || type === 'appeal') return false
+      return m.applicationId === threadId
+    })
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 }
 
@@ -1178,17 +1197,71 @@ completedGigs: gigster.completedGigs ?? 0,
           if (!job) return false
           return a.applicantId === userId || job.posterId === userId
         })
-        .map((a) => toChatThread(a, userId))
+        .flatMap((a) => {
+          const job = findJob(a.jobId)
+          const out: ChatThreadDTO[] = []
+          const reports = db.reports.filter((r) => r.applicationId === a.id)
+          for (const report of reports) {
+            const msgs = messagesFor(-report.id)
+            const last = msgs[msgs.length - 1] ?? null
+            const unread = msgs.filter((m) => m.senderId !== userId && m.readAt == null).length
+            const reporterRole = report.reporterId === job.posterId ? 'Client' : 'Gigster'
+            out.push({
+              id: -report.id,
+              jobId: job.id,
+              jobTitle: job.title,
+              jobStatus: job.status,
+              applicationId: a.id,
+              applicationStatus: a.status,
+              posterId: job.posterId,
+              otherUser: toSummary(findUser(job.posterId)),
+              lastMessage: last?.body ?? (reporterRole === 'Client' ? 'Client No-Show report filed' : 'Gigster No-Show report filed'),
+              lastMessageAt: last?.createdAt ?? (report.reportedAt ?? a.createdAt),
+              unreadCount: unread,
+              updatedAt: last?.createdAt ?? report.reportedAt ?? a.createdAt,
+              hasReportNotice: true,
+            })
+          }
+          const hasDirect = db.messages.some((m) => {
+            const type = (m as any).__type
+            return m.applicationId === a.id && type !== 'report' && type !== 'appeal'
+          })
+          const active = a.status === 'SCREENING' || a.status === 'ACCEPTED'
+          if (hasDirect || active) out.push(toChatThread(a, userId))
+          return out
+        })
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     },
     async messages(threadId, afterId) {
       await delay(120)
       const userId = currentUserId()
+      if (threadId < 0) {
+        const report = db.reports.find((r) => r.id === Math.abs(threadId))
+        if (!report) throw new ApiError(404, 'Report not found.')
+        const app = findApplication(report.applicationId as number)
+        assertChatParticipant(app, userId)
+        const reportId = Math.abs(threadId)
+        for (const message of db.messages) {
+          try {
+            const data = JSON.parse((message as any).__data ?? '{}')
+            if (Number(data.reportId) === reportId && message.senderId !== userId && message.readAt == null) {
+              message.readAt = now()
+            }
+          } catch {
+            // ignore
+          }
+        }
+        save()
+        return messagesFor(threadId)
+          .filter((m) => afterId == null || m.id > afterId)
+          .map(toChatMessageDTO)
+      }
       const app = findApplication(threadId)
       assertChatParticipant(app, userId)
       for (const message of db.messages) {
         if (message.applicationId === threadId && message.senderId !== userId && message.readAt == null) {
-          message.readAt = now()
+          const type = (message as any).__type
+          if (type !== 'report' && type !== 'appeal') message.readAt = now()
         }
       }
       save()
@@ -1199,6 +1272,9 @@ completedGigs: gigster.completedGigs ?? 0,
     async send(threadId, { body }) {
       await delay()
       const userId = currentUserId()
+      if (threadId < 0) {
+        throw new ApiError(403, 'System notification threads do not accept direct messages.')
+      }
       const app = findApplication(threadId)
       assertChatParticipant(app, userId)
       if (app.status !== 'SCREENING' && app.status !== 'ACCEPTED') {
