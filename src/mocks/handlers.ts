@@ -1132,6 +1132,19 @@ completedGigs: gigster.completedGigs ?? 0,
         report.status = 'APPEALED'
         report.appealReason = reason.trim()
         report.appealedAt = now()
+        // Update the matching report message payload so the UI reflects the new status.
+        for (const m of db.messages) {
+          if ((m as any).__type !== 'report') continue
+          try {
+            const d = JSON.parse((m as any).__data)
+            if (Number(d.reportId) === reportId) {
+              d.status = 'APPEALED'
+              ;(m as any).__data = JSON.stringify(d)
+            }
+          } catch {
+            // Ignore malformed payloads.
+          }
+        }
         const isPoster = job.posterId === userId
         postSystemMessage(
           report.applicationId,

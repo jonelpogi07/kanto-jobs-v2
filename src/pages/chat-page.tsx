@@ -202,6 +202,12 @@ function ChatConversation() {
   }
 
   const isLocked = thread.applicationStatus !== 'SCREENING' && thread.applicationStatus !== 'ACCEPTED'
+  const isSystemThread =
+    Boolean(thread.hasReportNotice) ||
+    Boolean(
+      messages?.length &&
+        messages.every((m) => m.type === 'report' || m.type === 'appeal' || m.type === 'system' || m.senderId === 0),
+    )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -210,11 +216,17 @@ function ChatConversation() {
           <ArrowLeft aria-hidden="true" />
           <span className="sr-only">Back to inbox</span>
         </Button>
-        <UserAvatar user={thread.otherUser} className="size-9" />
+        {isSystemThread ? (
+          <span className="flex size-9 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+            <AlertCircle className="size-5" aria-hidden="true" />
+          </span>
+        ) : (
+          <UserAvatar user={thread.otherUser} className="size-9" />
+        )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{thread.otherUser.fullName}</p>
+          <p className="truncate text-sm font-bold">{isSystemThread ? 'System Notification' : thread.otherUser.fullName}</p>
           <p className="truncate text-[11px] text-muted-foreground">
-            {thread.otherUser.phoneVerified ? 'Phone verified' : 'KantoJobs member'}
+            {isSystemThread ? 'System / Official Notice' : thread.otherUser.phoneVerified ? 'Phone verified' : 'KantoJobs member'}
           </p>
         </div>
         <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
@@ -229,7 +241,7 @@ function ChatConversation() {
           {thread.jobTitle}
         </Link>
       </div>
-      {isLocked ? (
+       {isLocked && !isSystemThread ? (
         <div className="border-b border-border bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
           {user && user.id === thread.posterId
             ? 'Screen this applicant in My Gigs (1 GigCoin) to unlock messaging and contact details.'
@@ -258,11 +270,23 @@ function ChatConversation() {
             {messages.map((message, index) => {
               const day = formatDayLabel(message.createdAt)
               const showDay = index === 0 || formatDayLabel(messages[index - 1].createdAt) !== day
+              const appealedReportIds = new Set(
+                (messages ?? [])
+                  .filter((m) => m.type === 'appeal')
+                  .map((m) => Number(messageData(m).reportId)),
+              )
               return (
                 <li key={message.id}>
                   {showDay ? <DayDivider label={day} /> : null}
                   {message.type === 'report' ? (
-                    <ReportNotice key={message.id} message={message} thread={thread} me={user?.id ?? -1} onAppeal={handleReportAppeal} />
+                    <ReportNotice
+                      key={message.id}
+                      message={message}
+                      thread={thread}
+                      me={user?.id ?? -1}
+                      onAppeal={handleReportAppeal}
+                      appealed={appealedReportIds.has(Number(messageData(message).reportId))}
+                    />
                   ) : message.type === 'appeal' ? (
                     <AppealNotice key={message.id} message={message} />
                   ) : message.type === 'system' ? (
@@ -277,32 +301,38 @@ function ChatConversation() {
         )}
       </div>
 
-      <form
-        onSubmit={submit}
-        className="shrink-0 border-t border-border bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-      >
-        <div className="flex items-center gap-2">
-          <Input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={`Message ${firstName}...`}
-            aria-label="Message"
-            maxLength={2000}
-            autoComplete="off"
-            disabled={isLocked}
-            className="h-11 flex-1 rounded-full border-transparent bg-secondary px-4 text-base focus-visible:border-ring disabled:opacity-50"
-          />
-          <Button
-            type="submit"
-            size="icon-lg"
-            className="size-11 shrink-0 rounded-full"
-            disabled={isLocked || !draft.trim() || sending}
-            aria-label="Send message"
-          >
-            {sending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
-          </Button>
-        </div>
-      </form>
+       {isSystemThread ? (
+         <div className="shrink-0 border-t border-border bg-card px-4 py-3 text-center text-xs text-muted-foreground">
+           System notifications are automated. Use the Appeal button above if you need to dispute a report.
+         </div>
+       ) : (
+       <form
+         onSubmit={submit}
+         className="shrink-0 border-t border-border bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+       >
+         <div className="flex items-center gap-2">
+           <Input
+             value={draft}
+             onChange={(e) => setDraft(e.target.value)}
+             placeholder={`Message ${firstName}...`}
+             aria-label="Message"
+             maxLength={2000}
+             autoComplete="off"
+             disabled={isLocked}
+             className="h-11 flex-1 rounded-full border-transparent bg-secondary px-4 text-base focus-visible:border-ring disabled:opacity-50"
+           />
+           <Button
+             type="submit"
+             size="icon-lg"
+             className="size-11 shrink-0 rounded-full"
+             disabled={isLocked || !draft.trim() || sending}
+             aria-label="Send message"
+           >
+             {sending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Send aria-hidden="true" />}
+           </Button>
+         </div>
+       </form>
+       )}
 
       <AppealModal
         open={appealOpen}
@@ -364,25 +394,29 @@ function ReportNotice({
   thread,
   me,
   onAppeal,
+  appealed = false,
 }: {
   message: ChatMessageDTO
   thread: ChatThreadDTO
   me: number
   onAppeal: (reportId: number) => void
+  appealed?: boolean
 }) {
   const data = messageData(message)
   const reporterRole = (data.reporterRole ?? 'User') as string
   const status = (data.status ?? 'PENDING') as string
   const deadline = (data.appealDeadline ?? null) as string | null
   const windowStatus = appealWindowStatus(deadline)
-  const canAppeal = me === Number(data.targetUserId) && status === 'PENDING' && windowStatus === 'open'
+  const isAppealed = status === 'APPEALED' || appealed
+  const canAppeal = me === Number(data.targetUserId) && status === 'PENDING' && !appealed && windowStatus === 'open'
 
   return (
     <div className="flex flex-col gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm shadow-sm dark:border-amber-900/30 dark:bg-amber-900/20">
-      <div className="flex items-start gap-2">
-        <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold leading-snug">{message.body}</p>
+       <div className="flex items-start gap-2">
+         <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+         <div className="min-w-0 flex-1">
+           <span className="mb-1 inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">System Notification</span>
+           <p className="font-semibold leading-snug">{message.body}</p>
           <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
             <span className="font-bold">Reported by:</span> {reporterRole} &nbsp;·&nbsp;
             <span className="font-bold">Gig:</span> {thread.jobTitle}
@@ -394,18 +428,22 @@ function ReportNotice({
           )}
           <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
             <span className="font-bold">Status:</span>{' '}
-            {status === 'APPEALED' ? 'Appealed &mdash; Under Review' : status === 'REFUNDED' ? 'Refunded' : status === 'RESOLVED' ? 'Resolved' : 'Pending'}
+            {isAppealed ? 'Appealed — Under Review' : status === 'REFUNDED' ? 'Refunded' : status === 'RESOLVED' ? 'Resolved' : 'Pending'}
             &nbsp;·&nbsp;
             <span className="font-bold">Appeal window:</span>{' '}
-            {windowStatus === 'open' ? `Open &mdash; closes ${deadline ? formatClock(deadline) : ''}` : 'Closed'}
+            {windowStatus === 'open' ? `Open — closes ${deadline ? formatClock(deadline) : ''}` : 'Closed'}
           </p>
         </div>
       </div>
-      {canAppeal ? (
-        <Button onClick={() => onAppeal(Number(data.reportId))} className="mt-2 h-9 rounded-lg bg-amber-600 hover:bg-amber-700 text-amber-50 text-xs font-bold px-3">
-          Appeal
-        </Button>
-      ) : null}
+       {canAppeal ? (
+         <Button onClick={() => onAppeal(Number(data.reportId))} className="mt-2 h-9 rounded-lg bg-amber-600 hover:bg-amber-700 text-amber-50 text-xs font-bold px-3">
+           Appeal
+         </Button>
+       ) : isAppealed ? (
+         <span className="mt-2 inline-flex items-center rounded-lg bg-amber-200 px-3 py-1.5 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+           ✓ Appeal Submitted — Under Review
+         </span>
+       ) : null}
     </div>
   )
 }

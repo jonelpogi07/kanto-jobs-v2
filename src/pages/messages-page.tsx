@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Inbox, Loader2, MessageCircle } from 'lucide-react'
+import { AlertCircle, Inbox, Loader2, MessageCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
@@ -81,16 +81,25 @@ function ThreadList() {
 function ThreadRow({ thread }: { thread: ChatThreadDTO }) {
   const unread = thread.unreadCount > 0
   const preview = thread.lastMessage ?? 'Say hi and coordinate the details.'
+  const isSystem = Boolean(thread.hasReportNotice)
 
   return (
     <Link
       to={`/messages/${thread.id}`}
       className="flex items-start gap-3 border-b border-border px-4 py-3.5 outline-none transition-colors hover:bg-secondary/60 focus-visible:bg-secondary"
     >
-      <UserAvatar user={thread.otherUser} className="mt-0.5 size-11" />
+      {isSystem ? (
+        <span className="mt-0.5 flex size-11 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+          <AlertCircle className="size-5" aria-hidden="true" />
+        </span>
+      ) : (
+        <UserAvatar user={thread.otherUser} className="mt-0.5 size-11" />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <p className={cn('truncate text-sm', unread ? 'font-extrabold' : 'font-bold')}>{thread.otherUser.fullName}</p>
+          <p className={cn('truncate text-sm', unread ? 'font-extrabold' : 'font-bold')}>
+            {isSystem ? 'System Notification' : thread.otherUser.fullName}
+          </p>
           <span className="shrink-0 text-[11px] text-muted-foreground">
             {thread.lastMessageAt ? timeAgo(thread.lastMessageAt) : ''}
           </span>
