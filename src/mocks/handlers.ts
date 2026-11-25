@@ -3,12 +3,16 @@ import { ApiError, tokenStorage } from '@/services/token'
 import type {
   ApplicantDTO,
   ApplicationDTO,
+  AppealEvidence,
+  AppealStatus,
   AuthResponse,
   ChatMessageDTO,
+  ChatMessageType,
   ChatThreadDTO,
   JobPostDTO,
   NearbyGigsterDTO,
   Page,
+  ReportStatus,
   ReviewDTO,
   SearchNearbyGigstersRequest,
   UserDTO,
@@ -39,10 +43,35 @@ interface MockDb {
   applications: SeedApplication[]
   reviews: SeedReview[]
   messages: SeedMessage[]
-  reports: { id: number; reporterId: number; targetUserId: number; jobId: number; applicationId: number | null; reason: string; note?: string; createdAt: string }[]
+  reports: {
+    id: number
+    reporterId: number
+    targetUserId: number
+    jobId: number
+    applicationId: number | null
+    reason: string
+    note?: string
+    status: ReportStatus
+    reportedAt: string | null
+    appealDeadline: string | null
+    appealReason?: string
+    appealedAt: string | null
+    refunded: boolean
+    refundedAt: string | null
+  }[]
+  appeals: {
+    id: number
+    reportId: number
+    appellantId: number
+    reason: string
+    evidence: AppealEvidence[]
+    status: AppealStatus
+    createdAt: string
+    reviewedAt: string | null
+  }[]
 }
 
-const DB_KEY = 'kanto-jobs:mock-db:v2'
+const DB_KEY = 'kanto-jobs:mock-db:v3'
 
 function seed(): MockDb {
   return {
@@ -62,6 +91,7 @@ function seed(): MockDb {
     reviews: structuredClone(SEED_REVIEWS),
     messages: structuredClone(SEED_MESSAGES),
     reports: [],
+    appeals: [],
   }
 }
 
@@ -79,9 +109,22 @@ function load(): MockDb {
        }
        const acceptedIds = new Set(
         parsed.applications.filter((a) => a.status === 'ACCEPTED' || a.status === 'SCREENING').map((a) => a.id),
-      )
-       parsed.messages = (parsed.messages ?? []).filter((m) => acceptedIds.has(m.applicationId))
-       parsed.reports = parsed.reports ?? []
+       )
+       parsed.messages = (parsed.messages ?? []).filter((m) => {
+        const type = (m as any).__type as ChatMessageType | undefined
+        return acceptedIds.has(m.applicationId) || type === 'report' || type === 'appeal' || type === 'system'
+       })
+       parsed.reports = (parsed.reports ?? []).map((r: any) => ({
+         ...r,
+         status: r.status ?? 'PENDING',
+         reportedAt: r.reportedAt ?? null,
+         appealDeadline: r.appealDeadline ?? null,
+         appealReason: r.appealReason ?? undefined,
+         appealedAt: r.appealedAt ?? null,
+         refunded: r.refunded ?? false,
+         refundedAt: r.refundedAt ?? null,
+       }))
+       parsed.appeals = parsed.appeals ?? []
        return parsed
     } catch {
       localStorage.removeItem(DB_KEY)
@@ -108,12 +151,118 @@ function save() {
 
 export function resetMockDb() {
   db = seed()
+  // Run any auto-refunds for reports left pending in a previous session.
+  evaluateGigCoinRefunds()
   save()
 }
 
 const delay = (ms = 250 + Math.random() * 250) => new Promise((r) => setTimeout(r, ms))
 const nextId = (rows: { id: number }[]) => rows.reduce((max, r) => Math.max(max, r.id), 0) + 1
 const now = () => new Date().toISOString()
+const MS_24H = 24 * 60 * 60 * 1000
+
+function appealDeadlineFor(reportedAt: string) {
+  return new Date(new Date(reportedAt).getTime() + MS_24H).toISOString()
+}
+
+/** Posts a system/report/appeal notification message into a chat thread. */
+function postSystemMessage(
+  applicationId: number | null,
+  body: string,
+  type: ChatMessageType,
+  data: Record<string, unknown>,
+) {
+  if (!applicationId) return
+  const message: SeedMessage = {
+    id: nextId(db.messages),
+    applicationId,
+    senderId: 0,
+    body,
+    createdAt: now(),
+    readAt: null,
+  }
+  db.messages.push(message)
+  const dto: ChatMessageDTO = {
+    ...toChatMessageDTO(message),
+    type,
+    data: JSON.stringify(data),
+  }
+  // Persist the extended shape on the raw message so it survives reloads.
+  ;(message as any).__type = type
+  ;(message as any).__data = dto.data
+  save()
+
+  // Dispatch custom event for immediate UI sync across components/tabs
+  if (type === 'report' || type === 'appeal' || type === 'system') {
+    try {
+      window.dispatchEvent(new CustomEvent('kanto:chat-update', { detail: { applicationId, type } }))
+    } catch {
+      // Ignore dispatch errors (e.g., during SSR)
+    }
+  }
+}
+
+function toChatMessageDTO(message: SeedMessage): ChatMessageDTO {
+  return {
+    id: message.id,
+    threadId: message.applicationId,
+    senderId: message.senderId,
+    body: message.body,
+    createdAt: message.createdAt,
+    readAt: message.readAt,
+    type: (message as any).__type as ChatMessageType | undefined,
+    data: (message as any).__data as string | undefined,
+  }
+}
+
+/**
+ * Auto-refund helper: for pending client-reported gigster cancellations / no-shows
+ * whose 24-hour appeal window has elapsed with no appeal filed, refund 1 GigCoin
+ * to the client (reporter) and mark the report as refunded.
+ */
+export function evaluateGigCoinRefunds(): { refunded: number; evaluated: number } {
+  let refunded = 0
+  let evaluated = 0
+  const nowTs = Date.now()
+  for (const report of db.reports) {
+    if (report.status !== 'PENDING' || !report.reportedAt || !report.appealDeadline) continue
+    evaluated++
+    if (new Date(report.appealDeadline).getTime() >= nowTs) continue
+    if (db.appeals.some((a) => a.reportId === report.id)) continue
+    const job = db.jobs.find((j) => j.id === report.jobId)
+    if (!job || job.posterId !== report.reporterId) continue
+    const user = db.users.find((u) => u.id === report.reporterId)
+    if (user) {
+      user.gigCoins = Math.max(0, (user.gigCoins ?? 2)) + 1
+      refunded++
+    }
+    report.status = 'REFUNDED'
+    report.refundedAt = now()
+    postSystemMessage(
+      report.applicationId,
+      '1 GigCoin has been refunded to your balance. No appeal was filed within the 24-hour window.',
+      'system',
+      { reportId: report.id, jobId: report.jobId, refunded: true },
+    )
+  }
+  if (refunded || evaluated) save()
+  return { refunded, evaluated }
+}
+
+/** Test helper: backdate pending report(s) so their 24-hour window appears elapsed, then evaluate refunds. */
+export function simulate24hElapsed(reportId?: number): { refunded: number; evaluated: number } {
+  const backdated = new Date(Date.now() - MS_24H - 60_000).toISOString()
+  for (const report of db.reports) {
+    if (report.status !== 'PENDING') continue
+    if (reportId != null && report.id !== reportId) continue
+    report.reportedAt = backdated
+    report.appealDeadline = new Date(new Date(backdated).getTime() - MS_24H).toISOString()
+  }
+  if (reportId != null && !db.reports.some((r) => r.id === reportId)) {
+    throw new ApiError(404, 'Report not found.')
+  }
+  return evaluateGigCoinRefunds()
+}
 
 // ---------- Auth helpers ----------
 
@@ -172,7 +321,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }): JobPostDTO {
+function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }, viewerId?: number): JobPostDTO {
   const { posterId, ...rest } = job
   const apps = db.applications.filter((a) => a.jobId === job.id && a.status !== 'CANCELLED')
   const poster = findUser(posterId)
@@ -182,6 +331,7 @@ function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }): JobPos
   const merchantId = rest.merchantId ?? (isMerchantGig ? posterId : undefined)
   const merchantName = rest.merchantName ?? (isMerchantGig ? (poster.merchantBusinessName ?? poster.fullName) : undefined)
   const merchantBoosted = rest.merchantBoosted ?? (isMerchantGig && poster.isBusinessMerchant ? true : false)
+  const reportedByMe = viewerId != null && db.reports.some((r) => r.jobId === job.id && r.reporterId === viewerId)
   return {
     ...structuredClone(rest),
     images: rest.images ?? [],
@@ -195,6 +345,7 @@ function toJobDTO(job: JobRecord, coords?: { lat: number; lng: number }): JobPos
     distanceKm: coords
       ? Math.round(haversineKm(coords.lat, coords.lng, job.latitude, job.longitude) * 10) / 10
       : null,
+    reportedByMe,
   }
 }
 
@@ -202,6 +353,10 @@ function findJob(id: number): JobRecord {
   const job = db.jobs.find((j) => j.id === id)
   if (!job) throw new ApiError(404, 'Job not found.')
   return job
+}
+
+function findJobOrNull(id: number): JobRecord | undefined {
+  return db.jobs.find((j) => j.id === id)
 }
 
 function toApplicationDTO(app: SeedApplication, viewerId: number, embedJob: boolean): ApplicationDTO {
@@ -256,17 +411,6 @@ function messagesFor(applicationId: number): SeedMessage[] {
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
 }
 
-function toChatMessageDTO(message: SeedMessage): ChatMessageDTO {
-  return {
-    id: message.id,
-    threadId: message.applicationId,
-    senderId: message.senderId,
-    body: message.body,
-    createdAt: message.createdAt,
-    readAt: message.readAt,
-  }
-}
-
 function toChatThread(app: SeedApplication, viewerId: number): ChatThreadDTO {
   const job = findJob(app.jobId)
   const otherId = app.applicantId === viewerId ? job.posterId : app.applicantId
@@ -286,6 +430,10 @@ function toChatThread(app: SeedApplication, viewerId: number): ChatThreadDTO {
     lastMessageAt: last?.createdAt ?? null,
     unreadCount: messages.filter((m) => m.senderId !== viewerId && m.readAt == null).length,
     updatedAt: activity,
+    hasReportNotice: messages.some((m) => {
+      const type = (m as any).__type as ChatMessageType | undefined
+      return type === 'report' || type === 'appeal' || type === 'system'
+    }),
   }
 }
 
@@ -553,7 +701,7 @@ export const mockApi: KantoApi = {
         db.jobs
           .filter((j) => j.posterId === userId)
           .sort(byNewest)
-          .map((j) => toJobDTO(j)),
+          .map((j) => toJobDTO(j, undefined, userId)),
         page,
         size,
       )
@@ -571,53 +719,100 @@ export const mockApi: KantoApi = {
       save()
       return toJobDTO(job)
     },
-     async cancel(id) {
-       await delay()
-       const userId = currentUserId()
-       const job = findJob(id)
-       if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can cancel this job.')
-       if (job.status === 'COMPLETED' || job.status === 'CANCELLED') {
-         throw new ApiError(409, 'This job is already finished.')
-       }
-        job.status = 'CANCELLED'
-        job.updatedAt = now()
-        // Cancel accepted applications and reject pending/screening/invited ones
-        for (const app of db.applications) {
-          if (app.jobId !== id) continue
-          if (app.status === 'ACCEPTED') app.status = 'CANCELLED'
-          else if (app.status === 'PENDING' || app.status === 'SCREENING' || app.status === 'INVITED') app.status = 'REJECTED'
-        }
-        save()
-        return toJobDTO(job)
-      },
-     async reportNoShow(id, { reason, note }) {
+    async cancel(id) {
+      await delay()
+      const userId = currentUserId()
+      const job = findJob(id)
+      if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can cancel this job.')
+      if (job.status === 'COMPLETED' || job.status === 'CANCELLED') {
+        throw new ApiError(409, 'This job is already finished.')
+      }
+      // GigCoin refund: gigs with zero applicants refund 1 GigCoin immediately.
+      // Gigs with applicants are not refunded here; refunds for reported gigster
+      // cancellations follow the 24-hour appeal window instead.
+      const hasApplicants = db.applications.some((a) => a.jobId === id && a.status !== 'CANCELLED')
+      job.status = 'CANCELLED'
+      job.updatedAt = now()
+      // Cancel accepted applications and reject pending/screening/invited ones
+      for (const app of db.applications) {
+        if (app.jobId !== id) continue
+        if (app.status === 'ACCEPTED') app.status = 'CANCELLED'
+        else if (app.status === 'PENDING' || app.status === 'SCREENING' || app.status === 'INVITED') app.status = 'REJECTED'
+      }
+      if (!hasApplicants) {
+        const poster = db.users.find((u) => u.id === userId)
+        if (poster) poster.gigCoins = Math.max(0, (poster.gigCoins ?? 2)) + 1
+        job.gigCoinRefunded = true
+        job.refundedAt = now()
+      }
+      save()
+      return toJobDTO(job)
+    },
+      async reportNoShow(id, { reason, note }) {
         await delay()
         const userId = currentUserId()
         const job = findJob(id)
         if (job.posterId !== userId) throw new ApiError(403, 'Only the poster can report.')
         const accepted = db.applications.find((a) => a.jobId === id && a.status === 'ACCEPTED')
+        const reportedAt = now()
         job.status = 'CANCELLED'
         job.updatedAt = now()
+        job.reportId = db.reports.length + 1
+        job.reportedAt = reportedAt
+        job.appealDeadline = appealDeadlineFor(reportedAt)
         for (const app of db.applications) {
           if (app.jobId !== id) continue
           if (app.status === 'ACCEPTED') app.status = 'CANCELLED'
           else if (app.status === 'PENDING' || app.status === 'SCREENING' || app.status === 'INVITED') app.status = 'REJECTED'
         }
         if (accepted) {
-          db.reports.push({ id: nextId(db.reports), reporterId: userId, targetUserId: accepted.applicantId, jobId: id, applicationId: accepted.id, reason, note, createdAt: now() })
+          const report = {
+            id: nextId(db.reports),
+            reporterId: userId,
+            targetUserId: accepted.applicantId,
+            jobId: id,
+            applicationId: accepted.id,
+            reason,
+            note,
+            status: 'PENDING' as ReportStatus,
+            reportedAt,
+            appealDeadline: job.appealDeadline,
+            appealedAt: null,
+            refunded: false,
+            refundedAt: null,
+          }
+          db.reports.push(report)
+          job.reportId = report.id
+          postSystemMessage(
+            accepted.id,
+            `Report filed: ${reason}. The reported gigster has 24 hours to appeal.`,
+            'report',
+            {
+              reportId: report.id,
+              jobId: id,
+              jobTitle: job.title,
+              reporterId: userId,
+              targetUserId: accepted.applicantId,
+              reporterRole: 'Client',
+              status: 'PENDING',
+              appealDeadline: job.appealDeadline,
+              reason,
+              note,
+            },
+          )
         }
         save()
         return toJobDTO(job)
       },
-    async applications(jobId) {
-      await delay(150)
-      const userId = currentUserId()
-      if (findJob(jobId).posterId !== userId) throw new ApiError(403, 'Only the poster can view applicants.')
-      return db.applications
-        .filter((a) => a.jobId === jobId)
-        .sort(byNewest)
-        .map((a) => toApplicationDTO(a, userId, false))
-    },
+      async applications(jobId) {
+        await delay(150)
+        const userId = currentUserId()
+        if (findJob(jobId).posterId !== userId) throw new ApiError(403, 'Only the poster can view applicants.')
+        return db.applications
+          .filter((a) => a.jobId === jobId)
+          .sort(byNewest)
+          .map((a) => toApplicationDTO(a, userId, false))
+      },
     async apply(jobId, { pitch }) {
       await delay()
       const userId = currentUserId()
@@ -850,37 +1045,126 @@ completedGigs: gigster.completedGigs ?? 0,
         save()
         return toApplicationDTO(app, userId, false)
       },
-      async reportNoShow(id, { reason, note }) {
-       await delay()
-       const userId = currentUserId()
-       const app = db.applications.find((a) => a.id === id)
-       if (!app) throw new ApiError(404, 'Application not found.')
-       const job = findJob(app.jobId)
-       if (app.applicantId !== userId) throw new ApiError(403, 'Only the applicant can report.')
-       app.status = 'CANCELLED'
-       job.status = 'CANCELLED'
-       job.updatedAt = now()
-       db.reports.push({ id: nextId(db.reports), reporterId: userId, targetUserId: job.posterId, jobId: job.id, applicationId: app.id, reason, note, createdAt: now() })
-       save()
-       return toApplicationDTO(app, userId, true)
-     },
-     async respondToInvitation(id, accept) {
-       await delay()
-       const app = db.applications.find((a) => a.id === id)
-       if (!app) throw new ApiError(404, 'Application not found.')
-       app.status = accept ? 'PENDING' : 'REJECTED'
-       save()
-       return toApplicationDTO(app, currentUserId(), false)
-     },
-  },
-
-  chat: {
+       async reportNoShow(id, { reason, note }) {
+        await delay()
+        const userId = currentUserId()
+        const app = db.applications.find((a) => a.id === id)
+        if (!app) throw new ApiError(404, 'Application not found.')
+        const job = findJob(app.jobId)
+        if (app.applicantId !== userId) throw new ApiError(403, 'Only the applicant can report.')
+        const reportedAt = now()
+        app.status = 'CANCELLED'
+        job.status = 'CANCELLED'
+        job.updatedAt = now()
+        job.reportId = db.reports.length + 1
+        job.reportedAt = reportedAt
+        job.appealDeadline = appealDeadlineFor(reportedAt)
+        const report = {
+          id: nextId(db.reports),
+          reporterId: userId,
+          targetUserId: job.posterId,
+          jobId: job.id,
+          applicationId: app.id,
+          reason,
+          note,
+          status: 'PENDING' as ReportStatus,
+          reportedAt,
+          appealDeadline: job.appealDeadline,
+          appealedAt: null,
+          refunded: false,
+          refundedAt: null,
+        }
+        db.reports.push(report)
+        postSystemMessage(
+          app.id,
+          `Report filed: ${reason}. The reported client has 24 hours to appeal.`,
+          'report',
+          {
+            reportId: report.id,
+            jobId: job.id,
+            jobTitle: job.title,
+            reporterId: userId,
+            targetUserId: job.posterId,
+            reporterRole: 'Gigster',
+            status: 'PENDING',
+            appealDeadline: job.appealDeadline,
+            reason,
+            note,
+          },
+        )
+        save()
+        return toApplicationDTO(app, userId, true)
+      },
+      async respondToInvitation(id, accept) {
+        await delay()
+        const app = db.applications.find((a) => a.id === id)
+        if (!app) throw new ApiError(404, 'Application not found.')
+        app.status = accept ? 'PENDING' : 'REJECTED'
+        save()
+        return toApplicationDTO(app, currentUserId(), false)
+      },
+    },
+    appeals: {
+      async submit(reportId, { reason, evidence }) {
+        await delay()
+        const userId = currentUserId()
+        const report = db.reports.find((r) => r.id === reportId)
+        if (!report) throw new ApiError(404, 'Report not found.')
+        if (db.appeals.some((a) => a.reportId === reportId && a.appellantId === userId)) {
+          throw new ApiError(409, 'An appeal has already been filed for this report.')
+        }
+        if (report.status !== 'PENDING') {
+          throw new ApiError(409, 'This report cannot be appealed.')
+        }
+        const job = db.jobs.find((j) => j.id === report.jobId)
+        if (!job) throw new ApiError(404, 'Job not found.')
+        const appeal = {
+          id: nextId(db.appeals),
+          reportId,
+          appellantId: userId,
+          reason: reason.trim(),
+          evidence: evidence.map((e) => ({ ...e, id: crypto.randomUUID() })),
+          status: 'PENDING' as AppealStatus,
+          createdAt: now(),
+          reviewedAt: null,
+        }
+        db.appeals.push(appeal)
+        report.status = 'APPEALED'
+        report.appealReason = reason.trim()
+        report.appealedAt = now()
+        const isPoster = job.posterId === userId
+        postSystemMessage(
+          report.applicationId,
+          `Appeal submitted by ${isPoster ? 'the client' : 'the gigster'} — Under Review.`,
+          'appeal',
+          {
+            appealId: appeal.id,
+            reportId,
+            jobId: job.id,
+            jobTitle: job.title,
+            appellantId: userId,
+            status: 'PENDING',
+            reason: appeal.reason,
+            evidenceCount: appeal.evidence.length,
+          },
+        )
+        save()
+        return appeal
+      },
+    },
+    chat: {
     async threads() {
       await delay(120)
       const userId = currentUserId()
+      // Skip applications whose gig record is missing (dangling references keep the
+      // whole inbox from loading). Only valid, loadable conversations are returned;
+      // the inbox layer further filters to active/report threads.
       return db.applications
-        .filter((a) => a.status !== 'CANCELLED')
-        .filter((a) => a.applicantId === userId || findJob(a.jobId).posterId === userId)
+        .filter((a) => {
+          const job = findJobOrNull(a.jobId)
+          if (!job) return false
+          return a.applicantId === userId || job.posterId === userId
+        })
         .map((a) => toChatThread(a, userId))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     },

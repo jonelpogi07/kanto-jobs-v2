@@ -3,9 +3,11 @@ import { Inbox, Loader2, MessageCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/app-shell'
 import { RequireAuth } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
-import { useChatThreads } from '@/hooks/use-api'
+import { useChatThreads, CHAT_THREADS_KEY } from '@/hooks/use-api'
 import { timeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useSWRConfig } from 'swr'
+import { useEffect } from 'react'
 import type { ChatThreadDTO } from '@/types'
 
 export function MessagesPage() {
@@ -21,8 +23,24 @@ export function MessagesPage() {
 
 function ThreadList() {
   const { data: threads, isLoading } = useChatThreads()
+  const { mutate } = useSWRConfig()
+
+  useEffect(() => {
+    const onStorage = () => void mutate(CHAT_THREADS_KEY)
+    const onFocus = () => void mutate(CHAT_THREADS_KEY)
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [mutate])
+
   const visible = (threads ?? []).filter(
-    (t) => t.applicationStatus === 'SCREENING' || t.applicationStatus === 'ACCEPTED',
+    (t) =>
+      t.applicationStatus === 'SCREENING' ||
+      t.applicationStatus === 'ACCEPTED' ||
+      (t.jobStatus === 'CANCELLED' && t.hasReportNotice),
   )
 
   if (isLoading && !threads) {

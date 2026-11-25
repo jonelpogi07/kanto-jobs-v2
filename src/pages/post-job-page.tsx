@@ -558,7 +558,7 @@ function PostJobForm() {
       </form>
 
       <Dialog open={confirmationStep !== 'idle'} onOpenChange={(open) => !open && handleCancelConfirmation()}>
-        <DialogContent className="max-w-md">
+        <DialogContent showCloseButton={false} className="max-w-md">
           <DialogHeader>
             {confirmationStep === 'searching' && (
               <>
@@ -579,23 +579,22 @@ function PostJobForm() {
                   ) : (
                     <CheckCircle2 className="size-5 text-success" aria-hidden="true" />
                   )}
-                  {searchError ? 'Search completed with issues' : 'Found nearby gigsters'}
+                  {searchError ? 'Search completed with issues' : nearbyGigstersCount > 0
+                    ? `Found ${nearbyGigstersCount} active nearby gigster${nearbyGigstersCount !== 1 ? 's' : ''}`
+                    : 'No nearby gigsters found'}
                 </DialogTitle>
                 <DialogDescription className="space-y-2">
-                  <p>
-                    {searchError ? (
-                      <>
-                        <span className="text-destructive">{searchError}</span>
-                        <br />
-                        <span className="text-muted-foreground">You can still post your gig, but notifications may not reach nearby gigsters.</span>
-                      </>
-                    ) : (
-                      <>
-                        <strong>Found {nearbyGigstersCount} active nearby gigster{nearbyGigstersCount !== 1 ? 's' : ''}</strong>
-                        {nearbyGigstersCount === 0 && <span className="text-muted-foreground ml-2">(No gigsters found in this area)</span>}
-                      </>
-                    )}
-                  </p>
+                  {searchError ? (
+                    <>
+                      <span className="text-destructive">{searchError}</span>
+                      <br />
+                      <span className="text-muted-foreground">You can still post your gig, but notifications may not reach nearby gigsters.</span>
+                    </>
+                  ) : nearbyGigstersCount > 0 ? (
+                    <p className="text-muted-foreground">We'll notify matching gigsters in your area once posted.</p>
+                  ) : (
+                    <p className="text-muted-foreground">You can still publish your gig so gigsters can discover and apply.</p>
+                  )}
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50 border border-border">
                     <Coins className="size-5 text-primary" aria-hidden="true" />
                     <div>

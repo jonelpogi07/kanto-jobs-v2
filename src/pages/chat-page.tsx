@@ -2,18 +2,19 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useSWRConfig } from 'swr'
 import { toast } from 'sonner'
-import { ArrowLeft, Loader2, MessageCircle, Send } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Loader2, MessageCircle, Send } from 'lucide-react'
 import { ApplicationStatusBadge } from '@/components/badges'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RequireAuth } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
-import { CHAT_THREADS_KEY, useChatMessages, useChatThreads } from '@/hooks/use-api'
+import { AppealModal } from '@/components/appeal-modal'
+import { CHAT_THREADS_KEY, useChatMessages, useChatThreads, useRefreshAll, useMockRefundEvaluation } from '@/hooks/use-api'
 import { useAuth } from '@/lib/auth'
 import { formatClock, formatDayLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { api } from '@/services/api'
-import type { ChatMessageDTO } from '@/types'
+import type { ChatMessageDTO, ChatThreadDTO } from '@/types'
 
 const LOOKUP_TIMEOUT_MS = 10_000
 
@@ -40,8 +41,31 @@ function ChatConversation() {
   const { mutate: globalMutate } = useSWRConfig()
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [appealOpen, setAppealOpen] = useState(false)
+  const [appealReportId, setAppealReportId] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const count = messages?.length ?? 0
+  const refreshAll = useRefreshAll()
+  // Re-evaluate 24h refund eligibility on focus and cross-tab storage events.
+  useMockRefundEvaluation()
+
+  // Sync chat threads and messages across tabs on storage events.
+  useEffect(() => {
+    const onStorage = () => {
+      void mutateThreads()
+      if (thread?.id) void globalMutate(['/chat/threads/:id/messages', thread.id])
+    }
+    const onFocus = () => {
+      void mutateThreads()
+      if (thread?.id) void globalMutate(['/chat/threads/:id/messages', thread.id])
+    }
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [mutateThreads, globalMutate, thread?.id])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -172,6 +196,11 @@ function ChatConversation() {
     }
   }
 
+  function handleReportAppeal(reportId: number) {
+    setAppealReportId(reportId)
+    setAppealOpen(true)
+  }
+
   const isLocked = thread.applicationStatus !== 'SCREENING' && thread.applicationStatus !== 'ACCEPTED'
 
   return (
@@ -232,7 +261,15 @@ function ChatConversation() {
               return (
                 <li key={message.id}>
                   {showDay ? <DayDivider label={day} /> : null}
-                  <Bubble message={message} mine={message.senderId === user?.id} />
+                  {message.type === 'report' ? (
+                    <ReportNotice key={message.id} message={message} thread={thread} me={user?.id ?? -1} onAppeal={handleReportAppeal} />
+                  ) : message.type === 'appeal' ? (
+                    <AppealNotice key={message.id} message={message} />
+                  ) : message.type === 'system' ? (
+                    <SystemNotice key={message.id} message={message} />
+                  ) : (
+                    <Bubble message={message} mine={message.senderId === user?.id} />
+                  )}
                 </li>
               )
             })}
@@ -266,6 +303,18 @@ function ChatConversation() {
           </Button>
         </div>
       </form>
+
+      <AppealModal
+        open={appealOpen}
+        onOpenChange={setAppealOpen}
+        reportId={appealReportId!}
+        onSuccess={() => {
+          setAppealOpen(false)
+          setAppealReportId(null)
+          void refreshAll()
+          void globalMutate(CHAT_THREADS_KEY)
+        }}
+      />
     </div>
   )
 }
@@ -293,6 +342,95 @@ function Bubble({ message, mine }: { message: ChatMessageDTO; mine: boolean }) {
         {formatClock(message.createdAt)}
         {mine ? (message.readAt ? ' · Read' : ' · Sent') : ''}
       </span>
+    </div>
+  )
+}
+
+function messageData(message: ChatMessageDTO) {
+  try {
+    return message.data ? (JSON.parse(message.data) as Record<string, unknown>) : {}
+  } catch {
+    return {}
+  }
+}
+
+function appealWindowStatus(deadline: string | null) {
+  if (!deadline) return 'closed'
+  return new Date(deadline).getTime() > Date.now() ? 'open' : 'closed'
+}
+
+function ReportNotice({
+  message,
+  thread,
+  me,
+  onAppeal,
+}: {
+  message: ChatMessageDTO
+  thread: ChatThreadDTO
+  me: number
+  onAppeal: (reportId: number) => void
+}) {
+  const data = messageData(message)
+  const reporterRole = (data.reporterRole ?? 'User') as string
+  const status = (data.status ?? 'PENDING') as string
+  const deadline = (data.appealDeadline ?? null) as string | null
+  const windowStatus = appealWindowStatus(deadline)
+  const canAppeal = me === Number(data.targetUserId) && status === 'PENDING' && windowStatus === 'open'
+
+  return (
+    <div className="flex flex-col gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm shadow-sm dark:border-amber-900/30 dark:bg-amber-900/20">
+      <div className="flex items-start gap-2">
+        <AlertCircle className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold leading-snug">{message.body}</p>
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+            <span className="font-bold">Reported by:</span> {reporterRole} &nbsp;·&nbsp;
+            <span className="font-bold">Gig:</span> {thread.jobTitle}
+          </p>
+          {(data.note as string) && (
+            <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+              <span className="font-bold">Note:</span> {String(data.note)}
+            </p>
+          )}
+          <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+            <span className="font-bold">Status:</span>{' '}
+            {status === 'APPEALED' ? 'Appealed &mdash; Under Review' : status === 'REFUNDED' ? 'Refunded' : status === 'RESOLVED' ? 'Resolved' : 'Pending'}
+            &nbsp;·&nbsp;
+            <span className="font-bold">Appeal window:</span>{' '}
+            {windowStatus === 'open' ? `Open &mdash; closes ${deadline ? formatClock(deadline) : ''}` : 'Closed'}
+          </p>
+        </div>
+      </div>
+      {canAppeal ? (
+        <Button onClick={() => onAppeal(Number(data.reportId))} className="mt-2 h-9 rounded-lg bg-amber-600 hover:bg-amber-700 text-amber-50 text-xs font-bold px-3">
+          Appeal
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function AppealNotice({ message }: { message: ChatMessageDTO }) {
+  const data = messageData(message)
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-3 text-sm shadow-sm dark:border-blue-900/30 dark:bg-blue-900/20">
+      <p className="font-semibold leading-snug">{message.body}</p>
+      {(data.reason as string) && (
+        <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+          <span className="font-bold">Reason:</span> {String(data.reason)}
+        </p>
+      )}
+      <p className="mt-1 text-xs text-blue-700 dark:text-blue-300">
+        <span className="font-bold">Status:</span> Under Review
+      </p>
+    </div>
+  )
+}
+
+function SystemNotice({ message }: { message: ChatMessageDTO }) {
+  return (
+    <div className="rounded-xl border border-secondary bg-secondary px-3.5 py-3 text-sm shadow-sm dark:border-secondary/50 dark:bg-secondary/20">
+      <p className="text-sm text-muted-foreground">{message.body}</p>
     </div>
   )
 }

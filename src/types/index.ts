@@ -24,6 +24,52 @@ export type JobStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
 
 export type ApplicationStatus = 'INVITED' | 'PENDING' | 'SCREENING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED'
 
+export type ReportStatus = 'PENDING' | 'APPEALED' | 'REFUNDED' | 'RESOLVED' | 'REJECTED'
+
+export type AppealStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export type ChatMessageType = 'text' | 'system' | 'report' | 'appeal'
+
+/** A cancellation / no-show report filed against the other party of a gig. */
+export interface ReportDTO {
+  id: number
+  reporterId: number
+  targetUserId: number
+  jobId: number
+  applicationId: number | null
+  reason: string
+  note?: string
+  status: ReportStatus
+  /** When the report was filed. */
+  reportedAt: string | null
+  /** reportedAt + 24 hours for client-reported gigster cancellations / no-shows. */
+  appealDeadline: string | null
+  appealReason?: string
+  appealedAt: string | null
+  refunded: boolean
+  refundedAt: string | null
+}
+
+/** Evidence attached to an appeal (stored as data URLs in the mock layer). */
+export interface AppealEvidence {
+  id: string
+  name: string
+  type: string
+  size: number
+  dataUrl: string
+}
+
+export interface AppealDTO {
+  id: number
+  reportId: number
+  appellantId: number
+  reason: string
+  evidence: AppealEvidence[]
+  status: AppealStatus
+  createdAt: string
+  reviewedAt: string | null
+}
+
 /** Lightweight user projection embedded in jobs, applications and reviews. */
 export interface UserSummaryDTO {
   id: number
@@ -102,6 +148,17 @@ export interface JobPostDTO {
   merchantId?: number
   merchantName?: string
   merchantBoosted?: boolean
+  /** Set when a cancellation/no-show report has been filed on this gig. */
+  reportId?: number
+  /** When the report was filed (client-reported gigster cancellations / no-shows). */
+  reportedAt?: string | null
+  /** reportedAt + 24 hours; the appeal window for the reported party. */
+  appealDeadline?: string | null
+  /** Whether 1 GigCoin was already refunded for this cancellation. */
+  gigCoinRefunded?: boolean
+  refundedAt?: string | null
+  /** Whether the current viewer (poster) already submitted a no-show report for this gig. */
+  reportedByMe?: boolean
 }
 
 export interface ApplicantDTO extends UserSummaryDTO {
@@ -144,6 +201,8 @@ export interface ChatThreadDTO {
   lastMessageAt: string | null
   unreadCount: number
   updatedAt: string
+  /** True when the thread carries a cancellation/no-show report or appeal notice. */
+  hasReportNotice?: boolean
 }
 
 export interface ChatMessageDTO {
@@ -154,6 +213,10 @@ export interface ChatMessageDTO {
   createdAt: string
   /** ISO timestamp when the recipient read the message, or null if unread. */
   readAt: string | null
+  /** `text` for ordinary chat messages; `system`/`report`/`appeal` for notification cards. */
+  type?: ChatMessageType
+  /** Structured payload for system/report/appeal messages (JSON string). */
+  data?: string
 }
 
 export interface ReviewDTO {

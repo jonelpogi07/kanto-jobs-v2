@@ -1,5 +1,7 @@
 import type {
   ApplicationDTO,
+  AppealDTO,
+  AppealEvidence,
   AuthResponse,
   ChatMessageDTO,
   ChatThreadDTO,
@@ -72,6 +74,10 @@ export interface KantoApi {
     reportNoShow(id: number, req: { reason: string; note?: string }): Promise<JobPostDTO>
     /** POST /jobs/search-nearby-gigsters */
     searchNearbyGigsters(req: SearchNearbyGigstersRequest): Promise<SearchNearbyGigstersResponse>
+  }
+  /** POST /reports/{reportId}/appeal */
+  appeals: {
+    submit(reportId: number, req: { reason: string; evidence: AppealEvidence[] }): Promise<AppealDTO>
   }
   applications: {
     /** GET /applications/mine */

@@ -15,7 +15,7 @@ import { RequireAuth } from '@/components/require-auth'
 import { ReportNoShowModal } from '@/components/report-no-show-modal'
 import { ReviewDialog } from '@/components/review-dialog'
 import { UserAvatar } from '@/components/user-avatar'
-import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, CHAT_THREADS_KEY } from '@/hooks/use-api'
+import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, useMockRefundEvaluation, CHAT_THREADS_KEY } from '@/hooks/use-api'
 import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo, CATEGORY_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
@@ -26,6 +26,7 @@ export function MyGigsPage() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') === 'applied' ? 'applied' : 'posted'
+  useMockRefundEvaluation()
   return (
     <>
       <PageHeader
@@ -91,6 +92,7 @@ function Empty({ title, body, cta, to }: { title: string; body: string; cta: str
 
 function PostedTab() {
   const { data, isLoading } = useMyJobs()
+  const { mutate: globalMutate } = useSWRConfig()
   const [filter, setFilter] = useState<'ALL' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('ALL')
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const toggleExpanded = useCallback((id: number) => {
@@ -101,6 +103,19 @@ function PostedTab() {
       return next
     })
   }, [])
+
+  // Sync across tabs on storage events.
+  useEffect(() => {
+    const onStorage = () => void globalMutate('/jobs/mine')
+    const onFocus = () => void globalMutate('/jobs/mine')
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+    }
+  }, [globalMutate])
+
   if (isLoading) return <Loading />
   const jobs = data?.content ?? []
   if (jobs.length === 0) {
@@ -169,19 +184,31 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, isExpanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
+  const reportedApplication = applications?.find((a) => job.reportId && a.id === job.reportId)
+  const targetApplication = accepted ?? reportedApplication
   const inProgress = job.status === 'IN_PROGRESS'
+  const canReport = !!targetApplication && !job.reportedByMe
   const visibleApps = (applications ?? [])
     .filter((a) => a.status !== 'REJECTED' && (!inProgress || a.status === 'ACCEPTED'))
     .sort((a, b) => applicantRank(a) - applicantRank(b) || b.createdAt.localeCompare(a.createdAt))
   const panelId = `applicants-${job.id}`
   const refreshAll = useRefreshAll()
   const canCancel = job.status === 'OPEN' || job.status === 'IN_PROGRESS'
+  const applicationsList = applications ?? []
+  const hasApplicants = applicationsList.length > 0
+  const screened = applicationsList.some((a) => a.status === 'SCREENING' || a.status === 'ACCEPTED')
+  const reportWindowOpen = job.appealDeadline ? new Date(job.appealDeadline).getTime() > Date.now() : false
 
   async function cancel() {
     setCancelling(true)
     try {
-      await api.jobs.cancel(job.id)
-      toast.success('Gig cancelled', { description: 'Applicants have been notified. You can post a new gig anytime.' })
+      const updated = await api.jobs.cancel(job.id)
+      const refunded = Boolean(updated.gigCoinRefunded)
+      toast.success('Gig cancelled', {
+        description: refunded
+          ? 'No applicants &mdash; 1 GigCoin has been refunded to your balance.'
+          : 'Applicants have been notified. You can post a new gig anytime.',
+      })
       setConfirmCancel(false)
       await refreshAll()
     } catch (e) {
@@ -198,6 +225,15 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
           <JobStatusBadge status={job.status} />
           <span className="text-xs text-muted-foreground">{timeAgo(job.createdAt)}</span>
         </div>
+        {job.status === 'CANCELLED' && (
+          <p className="text-xs text-muted-foreground">
+            {job.gigCoinRefunded
+              ? '1 GigCoin refunded to your balance.'
+              : job.reportId
+                ? `Reported &middot; appeal window ${reportWindowOpen ? 'open' : 'closed'}`
+                : ''}
+          </p>
+        )}
         <div className="flex items-center gap-2">
           <Link to={`/jobs/${job.id}`} className="font-bold leading-snug hover:text-primary">
             {job.title}
@@ -260,34 +296,66 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
             <p className="py-4 text-center text-sm text-muted-foreground">
               {inProgress ? 'No accepted applicant for this gig yet.' : 'No active applicants for this gig.'}
             </p>
-          ) : (
+) : (
             <>
               {visibleApps.map((app) => (
                 <ApplicantRow key={app.id} app={app} job={job} />
               ))}
-               {job.status === 'IN_PROGRESS' && accepted ? (
-                 <Button className="h-11 bg-success font-bold hover:bg-success/90" onClick={() => setReviewOpen(true)}>
-                   <CheckCircle2 aria-hidden="true" />
-                   Mark Completed & Rate
-                 </Button>
-               ) : null}
-               {job.status === 'IN_PROGRESS' && accepted ? (
-                 <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
-                   Report Cancelled / Gigster No-Show
-                 </Button>
-               ) : null}
+               {canReport ? (
+                  <Button className="h-11 bg-success font-bold hover:bg-success/90" onClick={() => setReviewOpen(true)}>
+                    <CheckCircle2 aria-hidden="true" />
+                    Mark Completed & Rate
+                  </Button>
+                ) : null}
+                {canReport && job.status === 'IN_PROGRESS' ? (
+                  <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
+                    Report Cancelled / Gigster No-Show
+                  </Button>
+                ) : null}
+                {canReport && job.status === 'IN_PROGRESS' ? (
+                  <p className="text-xs text-muted-foreground">
+                    Reporting starts a 24-hour appeal window for the gigster. If no appeal is filed, 1 GigCoin is refunded to your balance.
+                  </p>
+                ) : null}
+                {canReport && job.status === 'CANCELLED' && job.reportId ? (
+                  <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
+                    Report Cancelled / Gigster No-Show
+                  </Button>
+                ) : null}
+                {canReport && job.status === 'CANCELLED' && job.reportId ? (
+                  <p className="text-xs text-muted-foreground">
+                    The gigster has already reported you. You can still file a counter-report within the appeal window.
+                  </p>
+                ) : null}
             </>
           )}
           {canCancel && (
-            <Button
-              variant="destructive"
-              className="mt-2 h-10 font-semibold"
-              onClick={() => setConfirmCancel(true)}
-              disabled={cancelling}
-            >
-              <X className="size-4" />
-              Cancel gig
-            </Button>
+            <div className="mt-2 flex flex-col gap-1">
+              <Button
+                variant="destructive"
+                className="h-10 font-semibold"
+                onClick={() => setConfirmCancel(true)}
+                disabled={cancelling}
+              >
+                <X className="size-4" />
+                Cancel gig
+              </Button>
+              <div className="text-xs leading-relaxed">
+                {!hasApplicants ? (
+                  <p className="text-success dark:text-emerald-400">
+                    0 applicants &mdash; 1 GigCoin will be refunded to your balance immediately.
+                  </p>
+                ) : screened ? (
+                  <p className="text-amber-700 dark:text-amber-300 font-medium">
+                    This gig has applicants and an applicant has already been screened &mdash; the GigCoin cannot be retrieved or refunded.
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Applicants have pitched this gig. Once an applicant is screened, the GigCoin can no longer be refunded.
+                  </p>
+                )}
+              </div>
+            </div>
           )}
         </div>
       ) : null}
