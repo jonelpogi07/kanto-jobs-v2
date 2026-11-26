@@ -223,14 +223,15 @@ function Reviews({ user }: { user: UserDTO }) {
 }
 
 function WorkingDays({ days }: { days: string[] }) {
-  const anytime = days.length === WEEKDAYS.length
-  const selected = anytime ? [] : WEEKDAYS.filter((d) => days.includes(d))
+  const safeDays = days ?? []
+  const anytime = safeDays.length === WEEKDAYS.length
+  const selected = anytime ? [] : WEEKDAYS.filter((d) => safeDays.includes(d))
   return (
     <section aria-labelledby="working-days-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
       <h2 id="working-days-heading" className="text-sm font-bold">
         Working Days
       </h2>
-      {days.length === 0 ? (
+      {safeDays.length === 0 ? (
         <p className="text-sm text-muted-foreground">Not set</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">

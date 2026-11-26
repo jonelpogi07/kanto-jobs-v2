@@ -29,7 +29,12 @@ export function AppShell() {
 function BottomNav() {
   const { data: threads } = useChatThreads()
   const unread = (threads ?? [])
-    .filter((t) => t.applicationStatus === 'SCREENING' || t.applicationStatus === 'ACCEPTED')
+    .filter(
+      (t) =>
+        t.applicationStatus === 'SCREENING' ||
+        t.applicationStatus === 'ACCEPTED' ||
+        (t.jobStatus === 'CANCELLED' && t.hasReportNotice),
+    )
     .reduce((total, thread) => total + thread.unreadCount, 0)
 
   return (

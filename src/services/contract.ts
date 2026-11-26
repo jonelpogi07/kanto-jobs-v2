@@ -7,12 +7,14 @@ import type {
   ChatThreadDTO,
   CreateApplicationRequest,
   CreateJobPostRequest,
+  CreateReportRequest,
   CreateReviewRequest,
   JobPostDTO,
   JobSearchParams,
   LoginRequest,
   Page,
   RegisterRequest,
+  ReportDTO,
   ReviewDTO,
   SearchNearbyGigstersRequest,
   SearchNearbyGigstersResponse,
@@ -58,7 +60,7 @@ export interface KantoApi {
     mine(page?: number, size?: number): Promise<Page<JobPostDTO>>
     /** POST /jobs/{id}/complete */
     complete(id: number): Promise<JobPostDTO>
-    /** GET /jobs/{id}/applications  (poster only) */
+    /** GET /applications/job/{jobId}  (poster only) */
     applications(jobId: number): Promise<ApplicationDTO[]>
     /** POST /jobs/{id}/applications */
     apply(jobId: number, req: CreateApplicationRequest): Promise<ApplicationDTO>
@@ -68,8 +70,8 @@ export interface KantoApi {
     review(jobId: number, req: CreateReviewRequest): Promise<ReviewDTO>
     /** POST /jobs/{id}/cancel */
     cancel(id: number): Promise<JobPostDTO>
-    /** POST /jobs/{id}/report-no-show */
-    reportNoShow(id: number, req: { reason: string; note?: string }): Promise<JobPostDTO>
+    /** POST /jobs/{id}/report-no-show (no body) */
+    reportNoShow(id: number): Promise<JobPostDTO>
     /** POST /jobs/search-nearby-gigsters */
     searchNearbyGigsters(req: SearchNearbyGigstersRequest): Promise<SearchNearbyGigstersResponse>
   }
@@ -88,8 +90,8 @@ export interface KantoApi {
     decline(id: number): Promise<ApplicationDTO>
     /** POST /applications/{id}/cancel (applicant cancels their own application) */
     cancel(id: number): Promise<ApplicationDTO>
-    /** POST /applications/{id}/report-no-show */
-    reportNoShow(id: number, req: { reason: string; note?: string }): Promise<ApplicationDTO>
+    /** POST /applications/{id}/report-no-show (no body) */
+    reportNoShow(id: number): Promise<ApplicationDTO>
     /** POST /applications/{id}/respond-invitation */
     respondToInvitation(id: number, accept: boolean): Promise<ApplicationDTO>
   }
@@ -100,5 +102,15 @@ export interface KantoApi {
     messages(threadId: number, afterId?: number): Promise<ChatMessageDTO[]>
     /** POST /chat/threads/{id}/messages */
     send(threadId: number, req: SendMessageRequest): Promise<ChatMessageDTO>
+    /** POST /chat/threads/{id}/read */
+    markAsRead(threadId: number, lastReadId: number): Promise<void>
+  }
+  reports: {
+    /** GET /reports */
+    list(page?: number, size?: number): Promise<Page<ReportDTO>>
+    /** GET /reports/{id} */
+    get(id: number): Promise<ReportDTO>
+    /** POST /reports */
+    create(req: CreateReportRequest): Promise<ReportDTO>
   }
 }

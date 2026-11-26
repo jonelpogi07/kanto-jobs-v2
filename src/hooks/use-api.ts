@@ -1,22 +1,24 @@
 import useSWR, { useSWRConfig } from 'swr'
 import { useCallback, useEffect } from 'react'
 import { useAuth } from '@/lib/auth'
-import { useLocation } from '@/lib/location'
-import { api, USE_MOCKS } from '@/services/api'
-import type { JobSearchParams } from '@/types'
+import { api } from '@/services/api'
+import type { JobSearchParams, SearchNearbyGigstersRequest } from '@/types'
 
 const CHAT_UPDATE_EVENT = 'kanto:chat-update'
 
 export function useJobSearch(params: Omit<JobSearchParams, 'lat' | 'lng'>) {
-  const { coords } = useLocation()
   const { availableDays: _days, rateType: _rt, ...jobParams } = params as any
-  const full: JobSearchParams = { ...jobParams, ...coords, size: 50 }
+  const full: JobSearchParams = { ...jobParams, size: 50 }
   return useSWR(['/jobs', full], () => api.jobs.search(full), { keepPreviousData: true })
 }
 
 export function useJob(id: number) {
-  const { coords } = useLocation()
-  return useSWR(Number.isFinite(id) ? ['/jobs/:id', id, coords] : null, () => api.jobs.getById(id, coords))
+  return useSWR(Number.isFinite(id) ? ['/jobs/:id', id] : null, () => api.jobs.getById(id))
+}
+
+/** Nearby gigsters discoverable from the caller's current location (backend-backed). */
+export function useNearbyGigsters(req: SearchNearbyGigstersRequest | null) {
+  return useSWR(req ? ['/jobs/search-nearby-gigsters', req] : null, () => api.jobs.searchNearbyGigsters(req!))
 }
 
 export function useMyJobs() {
@@ -78,35 +80,4 @@ export function useChatMessages(threadId: number | null) {
 export function useRefreshAll() {
   const { mutate } = useSWRConfig()
   return useCallback(() => mutate(() => true), [mutate])
-}
-
-/**
- * Keeps mock-layer refund evaluation in sync across tabs/windows.
- * Refund eligibility is time-based (24-hour appeal window), so it is
- * re-evaluated on focus and on cross-tab `storage` events; when a refund
- * is issued the SWR cache is revalidated so balances refresh everywhere.
- */
-export function useMockRefundEvaluation() {
-  const { isAuthenticated } = useAuth()
-  const { mutate: globalMutate } = useSWRConfig()
-  const handle = useCallback(async () => {
-    if (!USE_MOCKS || !isAuthenticated) return
-    const { evaluateGigCoinRefunds } = await import('@/mocks/handlers')
-    const result = evaluateGigCoinRefunds()
-    if (result.refunded > 0) {
-      void globalMutate(() => true)
-      void globalMutate(CHAT_THREADS_KEY)
-    }
-  }, [isAuthenticated, globalMutate])
-
-  useEffect(() => {
-    if (!isAuthenticated) return
-    void handle()
-    window.addEventListener('storage', handle)
-    window.addEventListener('focus', handle)
-    return () => {
-      window.removeEventListener('storage', handle)
-      window.removeEventListener('focus', handle)
-    }
-  }, [handle, isAuthenticated])
 }

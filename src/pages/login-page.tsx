@@ -8,8 +8,7 @@ import { Label } from '@/components/ui/label'
 import { BrandLogo } from '@/components/brand-logo'
 import { useAuth } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import { DEMO_CREDENTIALS } from '@/mocks/data'
-import { api, USE_MOCKS } from '@/services/api'
+import { api } from '@/services/api'
 
 type Mode = 'login' | 'register'
 
@@ -20,8 +19,9 @@ export function LoginPage() {
   const redirect = params.get('redirect') || '/explore'
 
   const [mode, setMode] = useState<Mode>('login')
-  const [fullName, setFullName] = useState('')
-  const [identifier, setIdentifier] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState<'form' | null>(null)
@@ -32,7 +32,7 @@ export function LoginPage() {
     try {
       const res = await promise
       await signIn(res)
-      toast.success(`Welcome, ${res.user.fullName.split(' ')[0]}!`, {
+      toast.success(`Welcome, ${res.user.firstName || res.user.fullName.split(' ')[0]}!`, {
         description: 'You are signed in and ready to find or post gigs.',
       })
       navigate(redirect, { replace: true })
@@ -48,8 +48,8 @@ export function LoginPage() {
     setSubmitting('form')
     void finish(
       mode === 'login'
-        ? api.auth.login({ identifier, password })
-        : api.auth.register({ fullName, identifier, password }),
+        ? api.auth.login({ email, password })
+        : api.auth.register({ email, password, firstName, lastName }),
     )
   }
 
@@ -98,32 +98,47 @@ export function LoginPage() {
 
       <form onSubmit={onSubmit} className="mt-5 flex flex-col gap-4">
         {mode === 'register' ? (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="fullName">Full name</Label>
-<Input
-                id="fullName"
-                autoComplete="name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="firstName">First name</Label>
+              <Input
+                id="firstName"
+                autoComplete="given-name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 required
-                minLength={2}
+                minLength={1}
                 className="h-11 bg-card"
-                placeholder="Jonel Maniego"
+                placeholder="Jonel"
               />
-          </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
+                autoComplete="family-name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+                minLength={1}
+                className="h-11 bg-card"
+                placeholder="Maniego"
+              />
+            </div>
+          </>
         ) : null}
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="identifier">Mobile number or email</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
-            id="identifier"
-            autoComplete="username"
-            inputMode="email"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
             className="h-11 bg-card"
-            placeholder="09XX XXX XXXX or you@email.com"
+            placeholder="you@email.com"
           />
         </div>
 
@@ -162,69 +177,6 @@ export function LoginPage() {
           {mode === 'login' ? 'Log in' : 'Create account'}
         </Button>
       </form>
-
-      <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
-
-      {USE_MOCKS && mode === 'login' ? (
-        <div className="mt-6 flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier(DEMO_CREDENTIALS.client.identifier)
-              setPassword(DEMO_CREDENTIALS.client.password)
-            }}
-            className="rounded-xl border border-dashed border-primary/40 bg-primary-soft px-4 py-3 text-left text-sm"
-          >
-            <span className="font-semibold text-orange-800 dark:text-orange-300">Demo: Regular Client</span>
-            <span className="block text-xs text-orange-800/80 dark:text-orange-300/80">
-              {`Tap to fill ${DEMO_CREDENTIALS.client.identifier} / ${DEMO_CREDENTIALS.client.password}`}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier(DEMO_CREDENTIALS.merchants.upayaCafe.identifier)
-              setPassword(DEMO_CREDENTIALS.merchants.upayaCafe.password)
-            }}
-            className="rounded-xl border border-dashed border-amber-500/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-left text-sm"
-          >
-            <span className="font-semibold text-amber-800 dark:text-amber-300">Demo: Upaya Cafe (Merchant)</span>
-            <span className="block text-xs text-amber-800/80 dark:text-amber-300/80">
-              {`Tap to fill ${DEMO_CREDENTIALS.merchants.upayaCafe.identifier} / ${DEMO_CREDENTIALS.merchants.upayaCafe.password}`}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier(DEMO_CREDENTIALS.merchants.salangiKape.identifier)
-              setPassword(DEMO_CREDENTIALS.merchants.salangiKape.password)
-            }}
-            className="rounded-xl border border-dashed border-emerald-500/40 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-left text-sm"
-          >
-            <span className="font-semibold text-emerald-800 dark:text-emerald-300">Demo: Salangi ka't magkape (Merchant)</span>
-            <span className="block text-xs text-emerald-800/80 dark:text-emerald-300/80">
-              {`Tap to fill ${DEMO_CREDENTIALS.merchants.salangiKape.identifier} / ${DEMO_CREDENTIALS.merchants.salangiKape.password}`}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier(DEMO_CREDENTIALS.merchants.modernCafe.identifier)
-              setPassword(DEMO_CREDENTIALS.merchants.modernCafe.password)
-            }}
-            className="rounded-xl border border-dashed border-blue-500/40 bg-blue-50 dark:bg-blue-900/20 px-4 py-3 text-left text-sm"
-          >
-            <span className="font-semibold text-blue-800 dark:text-blue-300">Demo: The Modern Cafe (Merchant)</span>
-            <span className="block text-xs text-blue-800/80 dark:text-blue-300/80">
-              {`Tap to fill ${DEMO_CREDENTIALS.merchants.modernCafe.identifier} / ${DEMO_CREDENTIALS.merchants.modernCafe.password}`}
-            </span>
-          </button>
-        </div>
-      ) : null}
     </div>
   )
 }

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { RequireAuth } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
 import { AppealModal } from '@/components/appeal-modal'
-import { CHAT_THREADS_KEY, useChatMessages, useChatThreads, useRefreshAll, useMockRefundEvaluation } from '@/hooks/use-api'
+import { CHAT_THREADS_KEY, useChatMessages, useChatThreads, useRefreshAll } from '@/hooks/use-api'
 import { useAuth } from '@/lib/auth'
 import { formatClock, formatDayLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -46,8 +46,6 @@ function ChatConversation() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const count = messages?.length ?? 0
   const refreshAll = useRefreshAll()
-  // Re-evaluate 24h refund eligibility on focus and cross-tab storage events.
-  useMockRefundEvaluation()
 
   // Sync chat threads and messages across tabs on storage events.
   useEffect(() => {
@@ -124,6 +122,33 @@ function ChatConversation() {
   useEffect(() => {
     if (threadExists === true && !thread) void mutateThreads()
   }, [threadExists, thread, mutateThreads])
+
+  // Mark the open conversation as read so the unread badge clears.
+  // Applies to both regular threads and System Notification threads (negative ids).
+  useEffect(() => {
+    if (!thread) return
+    if (!messages?.length || thread.unreadCount <= 0) return
+    const lastReadId = messages.reduce((max, m) => (m.id > max ? m.id : max), 0)
+    if (lastReadId <= 0) return
+    let cancelled = false
+    // Optimistically clear the badge so it disappears immediately.
+    void mutateThreads(
+      (current: ChatThreadDTO[] | undefined) =>
+        (current ?? []).map((t) => (t.id === thread.id ? { ...t, unreadCount: 0 } : t)),
+      false,
+    )
+    void api.chat
+      .markAsRead(thread.id, lastReadId)
+      .then(() => {
+        if (!cancelled) void mutateThreads()
+      })
+      .catch(() => {
+        if (!cancelled) void mutateThreads()
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [thread, messages, mutateThreads])
 
   const retry = () => {
     setLookupError(null)

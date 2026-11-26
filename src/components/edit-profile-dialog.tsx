@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ME_KEY } from '@/lib/auth'
 import { RATE_TYPE_LABELS, WEEKDAYS, CATEGORIES, CATEGORY_LABELS } from '@/lib/format'
-import { LOCATIONS } from '@/mocks/data'
+import { LOCATIONS } from '@/lib/locations'
 import { api } from '@/services/api'
 import { tokenStorage } from '@/services/token'
 import { cn } from '@/lib/utils'
@@ -24,6 +24,9 @@ import type { RateType, UserDTO, JobCategory } from '@/types'
 
 const selectClass =
   'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+
+const DEFAULT_BARANGAY = 'Culubasa'
+const DEFAULT_CITY = 'Bamban, Tarlac'
 
 export function EditProfileDialog({
   user,
@@ -75,9 +78,9 @@ export function EditProfileDialog({
   }
 
   const [fullName, setFullName] = useState(user.fullName)
-  const [locationKey, setLocationKey] = useState(`${user.barangay}|${user.city}`)
-  const [bio, setBio] = useState(user.bio)
-  const [skills, setSkills] = useState<JobCategory[]>(user.skills as JobCategory[])
+  const [locationKey, setLocationKey] = useState(`${user.barangay || DEFAULT_BARANGAY}|${user.city || DEFAULT_CITY}`)
+  const [bio, setBio] = useState(user.bio ?? '')
+  const [skills, setSkills] = useState<JobCategory[]>((user.skills as JobCategory[]) ?? [])
   const [availableDays, setAvailableDays] = useState<string[]>(() => sortDays(readWorkingDays(user.id)))
   const [rateType, setRateType] = useState<RateType>(() => (user.rateType ?? readRateType(user.id)))
   const [saving, setSaving] = useState(false)
@@ -91,16 +94,16 @@ export function EditProfileDialog({
   useEffect(() => {
     if (!open) return
     setFullName(user.fullName)
-    setLocationKey(`${user.barangay}|${user.city}`)
-    setBio(user.bio)
-    setSkills(user.skills as JobCategory[])
+    setLocationKey(`${user.barangay || DEFAULT_BARANGAY}|${user.city || DEFAULT_CITY}`)
+    setBio(user.bio ?? '')
+    setSkills((user.skills as JobCategory[]) ?? [])
     setAvailableDays(sortDays(readWorkingDays(user.id)))
     setRateType(user.rateType ?? readRateType(user.id))
   }, [open, user])
 
   const locationOptions = LOCATIONS.some((l) => `${l.barangay}|${l.city}` === locationKey)
     ? LOCATIONS
-    : [{ barangay: user.barangay, city: user.city, latitude: 0, longitude: 0 }, ...LOCATIONS]
+    : [{ barangay: user.barangay || DEFAULT_BARANGAY, city: user.city || DEFAULT_CITY, municipality: user.city || DEFAULT_CITY }, ...LOCATIONS]
 
   async function save(e: React.FormEvent) {
     e.preventDefault()

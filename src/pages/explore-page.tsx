@@ -1,22 +1,30 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
-import { Search, SearchX, X, MapPin, ChevronDown, Calendar } from 'lucide-react'
+import { Search, SearchX, X, MapPin, ChevronDown } from 'lucide-react'
 import { CategoryPills, FilterButton, LocationPicker, type FeedFilters } from '@/components/explore/explore-controls'
 import { BrandLogo } from '@/components/brand-logo'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { JobCard, JobCardSkeleton } from '@/components/job-card'
 import { UserAvatar } from '@/components/user-avatar'
 import { buttonVariants } from '@/components/ui/button'
-import { useJobSearch, useMyJobs, useRefreshAll } from '@/hooks/use-api'
-import { formatPay, formatSchedule, RATE_TYPE_LABELS, WEEKDAYS, CATEGORY_LABELS } from '@/lib/format'
+import { useJobSearch, useMyJobs, useNearbyGigsters, useRefreshAll } from '@/hooks/use-api'
+import { formatPay, formatSchedule, CATEGORY_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/services/api'
-import type { JobCategory, ApplicationDTO } from '@/types'
+import type { JobCategory, ApplicationDTO, NearbyGigsterDTO } from '@/types'
 import { UrgencyBadge, VerifiedBadge } from '@/components/badges'
 import { RatingInline } from '@/components/rating'
-import { MOCK_GIGSTERS, type MockGigster } from '@/mocks/gigsters'
+
+function initialsOf(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
 
 export function ExplorePage() {
   const { user } = useAuth()
@@ -28,7 +36,7 @@ export function ExplorePage() {
   const [gigsterSort, setGigsterSort] = useState<'recommended' | 'rating' | 'completed'>('recommended')
   const [sortOpen, setSortOpen] = useState(false)
   const sortRef = useRef<HTMLDivElement>(null)
-  const [inviteTargetGigster, setInviteTargetGigster] = useState<MockGigster | null>(null)
+  const [inviteTargetGigster, setInviteTargetGigster] = useState<NearbyGigsterDTO | null>(null)
   const [invitingGigId, setInvitingGigId] = useState<number | null>(null)
   const [appsByGig, setAppsByGig] = useState<Record<number, ApplicationDTO[]>>({})
 
@@ -46,6 +54,11 @@ export function ExplorePage() {
   }, [sortOpen])
 
   const { data, isLoading, error } = useJobSearch({ q: deferredQuery, category, ...filters })
+
+  const { data: nearbyData } = useNearbyGigsters(
+    tab === 'gigsters' ? { category } : null,
+  )
+  const gigsters = nearbyData?.gigsters ?? []
 
   useEffect(() => {
     if (!inviteTargetGigster) {
@@ -66,39 +79,37 @@ export function ExplorePage() {
   const jobs = data?.content ?? []
   const urgentCount = jobs.filter((j) => j.timing === 'URGENT').length
 
-  const GLOBAL_MEAN_RATING = MOCK_GIGSTERS.reduce((s, g) => s + g.rating, 0) / MOCK_GIGSTERS.length
+  const GLOBAL_MEAN_RATING = gigsters.length
+    ? gigsters.reduce((s, g) => s + g.ratingAverage, 0) / gigsters.length
+    : 0
   const MIN_RATINGS = 10
-  const bayesianRating = (g: MockGigster) => {
+  const bayesianRating = (g: NearbyGigsterDTO) => {
     const v = Math.max(g.completedGigs, 1)
-    return (v / (v + MIN_RATINGS)) * g.rating + (MIN_RATINGS / (v + MIN_RATINGS)) * GLOBAL_MEAN_RATING
+    return (v / (v + MIN_RATINGS)) * g.ratingAverage + (MIN_RATINGS / (v + MIN_RATINGS)) * GLOBAL_MEAN_RATING
   }
 
   const needle = deferredQuery.trim().toLowerCase()
-  const filteredGigsters = MOCK_GIGSTERS.filter((g) => {
-    if (category && !g.skills.includes(category)) return false
-    if (filters.availableDays.length > 0 && !filters.availableDays.some((d) => g.availableDays.includes(d))) return false
-    if (filters.rateType.length > 0 && filters.rateType.length < 2) {
-      const sel = filters.rateType[0]
-      const allowed = sel === 'hourly' ? ['hourly', 'both'] : ['per_gig', 'both']
-      if (!allowed.includes(g.rateType)) return false
-    }
-    if (!needle) return true
-    return [g.name, g.bio, g.barangay].some((f) => f.toLowerCase().includes(needle))
-  }).sort((a, b) => {
-    if (gigsterSort === 'rating') {
-      const weightedScore = (g: MockGigster) => ((g.ratingCount * g.rating) + (10 * 4.5)) / (g.ratingCount + 10)
-      const diff = weightedScore(b) - weightedScore(a)
-      if (diff !== 0) return diff
-      return b.ratingCount - a.ratingCount
-    }
-    if (gigsterSort === 'completed') {
-      if (b.completedGigs !== a.completedGigs) return b.completedGigs - a.completedGigs
-      return b.rating - a.rating
-    }
-    const scoreA = bayesianRating(a) * 20 + Math.sqrt(a.completedGigs)
-    const scoreB = bayesianRating(b) * 20 + Math.sqrt(b.completedGigs)
-    return scoreB - scoreA
-  })
+  const filteredGigsters = gigsters
+    .filter((g) => {
+      if (category && !g.skills.includes(category)) return false
+      if (!needle) return true
+      return [g.fullName, g.barangay, g.city].some((f) => f.toLowerCase().includes(needle))
+    })
+    .sort((a, b) => {
+      if (gigsterSort === 'rating') {
+        const weightedScore = (g: NearbyGigsterDTO) => ((g.ratingCount * g.ratingAverage) + (10 * 4.5)) / (g.ratingCount + 10)
+        const diff = weightedScore(b) - weightedScore(a)
+        if (diff !== 0) return diff
+        return b.ratingCount - a.ratingCount
+      }
+      if (gigsterSort === 'completed') {
+        if (b.completedGigs !== a.completedGigs) return b.completedGigs - a.completedGigs
+        return b.ratingAverage - a.ratingAverage
+      }
+      const scoreA = bayesianRating(a) * 20 + Math.sqrt(a.completedGigs)
+      const scoreB = bayesianRating(b) * 20 + Math.sqrt(b.completedGigs)
+      return scoreB - scoreA
+    })
 
   async function handleInvite(gigId: number) {
     if (!inviteTargetGigster) return
@@ -106,16 +117,15 @@ export function ExplorePage() {
     try {
       await api.jobs.inviteGigsterToGig(gigId, {
         id: inviteTargetGigster.id,
-        name: inviteTargetGigster.name,
-        avatarInitials: inviteTargetGigster.avatarInitials,
-        rating: inviteTargetGigster.rating,
+        name: inviteTargetGigster.fullName,
+        avatarInitials: initialsOf(inviteTargetGigster.fullName),
+        rating: inviteTargetGigster.ratingAverage,
         completedGigs: inviteTargetGigster.completedGigs,
         barangay: inviteTargetGigster.barangay,
-        skills: inviteTargetGigster.skills,
-        bio: inviteTargetGigster.bio,
-        phone: inviteTargetGigster.phone,
+        skills: inviteTargetGigster.skills as JobCategory[],
+        phone: undefined,
       })
-      toast.success(`Invitation sent to ${inviteTargetGigster.name}!`)
+      toast.success(`Invitation sent to ${inviteTargetGigster.fullName}!`)
       setInviteTargetGigster(null)
       await refreshAll()
     } catch (e) {
@@ -279,83 +289,51 @@ export function ExplorePage() {
               ) : null}
             </div>
           </div>
-          <ul className="flex flex-col gap-3 pb-4">
-{filteredGigsters.map((g) => (
-              <li key={g.id} className="rounded-2xl border border-border bg-card p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
-                    {g.avatarInitials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate font-bold text-base">{g.name}</span>
-                      {g.verified && <VerifiedBadge compact />}
+          {filteredGigsters.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-6 py-12 text-center">
+              <SearchX className="size-8 text-muted-foreground" aria-hidden="true" />
+              <p className="font-semibold">No gigsters found nearby</p>
+              <p className="text-sm text-muted-foreground">Try widening your area or check back later.</p>
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-3 pb-4">
+              {filteredGigsters.map((g) => (
+                <li key={g.id} className="rounded-2xl border border-border bg-card p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary shrink-0">
+                      {initialsOf(g.fullName)}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <RatingInline average={g.rating} count={g.ratingCount} />
-                      <span>{g.completedGigs} gigs completed</span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="size-3 shrink-0" aria-hidden="true" />
-                        {g.barangay}, {g.city}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                      <Calendar className="size-3 shrink-0" aria-hidden="true" />
-                      <span className="flex flex-wrap gap-0.5" aria-label="Available days">
-                        {g.availableDays.length === WEEKDAYS.length ? (
-                          <span
-                            className={cn(
-                              'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                              'border-orange-200 bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-400/30',
-                            )}
-                          >
-                            Anytime
-                          </span>
-                        ) : g.availableDays.length === 0 ? null : (
-                          WEEKDAYS.filter((d) => g.availableDays.includes(d)).map((day) => (
-                            <span
-                              key={day}
-                              className={cn(
-                                'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                                'border-orange-200 bg-orange-50 text-orange-600',
-                              )}
-                            >
-                              {day}
-                            </span>
-                          ))
-                        )}
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate font-bold text-base">{g.fullName}</span>
+                        {g.phoneVerified && <VerifiedBadge compact />}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <RatingInline average={g.ratingAverage} count={g.ratingCount} />
+                        <span>{g.completedGigs} gigs completed</span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="size-3 shrink-0" aria-hidden="true" />
+                          {g.barangay}, {g.city}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className={cn(
-                      'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap',
-                      g.rateType === 'hourly'
-                        ? 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-400/30'
-                        : g.rateType === 'per_gig'
-                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-400/30'
-                          : 'border-violet-200 bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300 dark:border-violet-400/30',
-                    )}>
-                      {RATE_TYPE_LABELS[g.rateType]}
-                    </span>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {g.skills.map((s) => (
+                      <span key={s} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{CATEGORY_LABELS[s as JobCategory] ?? s}</span>
+                    ))}
                   </div>
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">{g.bio}</p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {g.skills.map((s) => (
-                    <span key={s} className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">{CATEGORY_LABELS[s] ?? s}</span>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="mt-3 w-full rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-                  onClick={() => setInviteTargetGigster(g)}
-                >
-                  Invite to Gig
-                </button>
-              </li>
-            ))}
-          </ul>
+                  <button
+                    type="button"
+                    className="mt-3 w-full rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                    onClick={() => setInviteTargetGigster(g)}
+                  >
+                    Invite to Gig
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
@@ -364,7 +342,7 @@ export function ExplorePage() {
           <div className="w-full max-w-md rounded-2xl bg-card p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <h2 id="invite-modal-title" className="text-lg font-bold">
-                Invite {inviteTargetGigster.name} to a Gig
+                Invite {inviteTargetGigster.fullName} to a Gig
               </h2>
               <button
                 type="button"
@@ -383,62 +361,62 @@ export function ExplorePage() {
                 </Link>
               </div>
             ) : (
-               <ul className="mt-4 max-h-60 overflow-y-auto flex flex-col gap-2">
-                 {openGigs.map((gig) => {
-                   const apps = appsByGig[gig.id] ?? []
-                   const norm = (s?: string | null) => s?.trim().toLowerCase()
-                   const match = apps.find((app) => {
-                     const st = app.status.toLowerCase()
-                     if (!['invited', 'pending', 'screening', 'accepted'].includes(st)) return false
-                     return (
-                       app.applicant.id === inviteTargetGigster!.id ||
-                       norm(app.applicant.fullName) === norm(inviteTargetGigster!.name)
-                     )
-                   })
-                   const already = !!match
-                   const badge = match
-                     ? match.status.toLowerCase() === 'invited'
-                       ? 'Already Invited'
-                       : 'Already Applied'
-                     : null
-                   return (
-                     <li key={gig.id}>
-                       <button
-                         type="button"
-                         className={cn(
-                           'w-full text-left rounded-xl border border-border bg-background p-3 hover:bg-secondary/50 transition disabled:opacity-50 disabled:cursor-not-allowed',
-                           already && 'pointer-events-none opacity-60',
-                         )}
-                         onClick={() => handleInvite(gig.id)}
-                         disabled={invitingGigId === gig.id || already}
-                       >
-                         <div className="flex items-start justify-between gap-2">
-                           <div className="min-w-0">
-                             <p className="font-semibold truncate">{gig.title}</p>
-<div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                <span className="font-bold text-success dark:text-emerald-400">{formatPay(gig.amount, gig.compensationType)}</span>
-                                <UrgencyBadge timing={gig.timing} />
-                                <span>{gig.barangay}, {gig.city.split(',')[0]}</span>
-                                <span>{formatSchedule(gig)}</span>
-                              </div>
-                           </div>
-                           <div className="flex flex-col items-end gap-1">
-                             {badge ? (
-                               <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{badge}</span>
-                             ) : null}
-                             {invitingGigId === gig.id && (
-                               <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
-                                 <span className="size-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
-                                 Inviting...
-                               </span>
-                             )}
-                           </div>
-                         </div>
-                       </button>
-                     </li>
-                   )
-                 })}
-               </ul>
+              <ul className="mt-4 max-h-60 overflow-y-auto flex flex-col gap-2">
+                {openGigs.map((gig) => {
+                  const apps = appsByGig[gig.id] ?? []
+                  const norm = (s?: string | null) => s?.trim().toLowerCase()
+                  const match = apps.find((app) => {
+                    const st = app.status.toLowerCase()
+                    if (!['invited', 'pending', 'screening', 'accepted'].includes(st)) return false
+                    return (
+                      app.applicant.id === inviteTargetGigster!.id ||
+                      norm(app.applicant.fullName) === norm(inviteTargetGigster!.fullName)
+                    )
+                  })
+                  const already = !!match
+                  const badge = match
+                    ? match.status.toLowerCase() === 'invited'
+                      ? 'Already Invited'
+                      : 'Already Applied'
+                    : null
+                  return (
+                    <li key={gig.id}>
+                      <button
+                        type="button"
+                        className={cn(
+                          'w-full text-left rounded-xl border border-border bg-background p-3 hover:bg-secondary/50 transition disabled:opacity-50 disabled:cursor-not-allowed',
+                          already && 'pointer-events-none opacity-60',
+                        )}
+                        onClick={() => handleInvite(gig.id)}
+                        disabled={invitingGigId === gig.id || already}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{gig.title}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <span className="font-bold text-success dark:text-emerald-400">{formatPay(gig.amount, gig.compensationType)}</span>
+                              <UrgencyBadge timing={gig.timing} />
+                              <span>{gig.barangay}, {gig.city.split(',')[0]}</span>
+                              <span>{formatSchedule(gig)}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {badge ? (
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">{badge}</span>
+                            ) : null}
+                            {invitingGigId === gig.id && (
+                              <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                                <span className="size-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden="true" />
+                                Inviting...
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             )}
           </div>
         </div>

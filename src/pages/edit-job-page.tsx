@@ -170,8 +170,6 @@ export function EditJobPage() {
         barangay: loc.barangay,
         city: loc.city,
         landmark: landmark.trim(),
-        latitude: loc.latitude,
-        longitude: loc.longitude,
         timing,
         scheduledAt: timing === 'SCHEDULED' ? new Date(scheduledAt).toISOString() : null,
         estimatedDuration: duration.trim() || null,

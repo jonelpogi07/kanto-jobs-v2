@@ -15,7 +15,7 @@ import { RequireAuth } from '@/components/require-auth'
 import { ReportNoShowModal } from '@/components/report-no-show-modal'
 import { ReviewDialog } from '@/components/review-dialog'
 import { UserAvatar } from '@/components/user-avatar'
-import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, useMockRefundEvaluation, CHAT_THREADS_KEY } from '@/hooks/use-api'
+import { useJobApplications, useMyApplications, useMyJobs, useRefreshAll, CHAT_THREADS_KEY } from '@/hooks/use-api'
 import { APPLICATION_STATUS_LABELS, formatPay, formatSchedule, timeAgo, CATEGORY_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
@@ -26,7 +26,6 @@ export function MyGigsPage() {
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') === 'applied' ? 'applied' : 'posted'
-  useMockRefundEvaluation()
   return (
     <>
       <PageHeader
@@ -184,8 +183,11 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
   const [cancelling, setCancelling] = useState(false)
   const { data: applications, isLoading } = useJobApplications(job.id, isExpanded)
   const accepted = applications?.find((a) => a.status === 'ACCEPTED')
+  // When the gigster cancels an accepted gig, the application becomes CANCELLED and the job becomes CANCELLED.
+  // Keep a reference to it so the client can still report the gigster for a refund.
+  const gigsterCancelledApp = applications?.find((a) => a.status === 'CANCELLED' && job.status === 'CANCELLED')
   const reportedApplication = applications?.find((a) => job.reportId && a.id === job.reportId)
-  const targetApplication = accepted ?? reportedApplication
+  const targetApplication = accepted ?? gigsterCancelledApp ?? reportedApplication
   const inProgress = job.status === 'IN_PROGRESS'
   const canReport = !!targetApplication && !job.reportedByMe
   const visibleApps = (applications ?? [])
@@ -301,27 +303,37 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
               {visibleApps.map((app) => (
                 <ApplicantRow key={app.id} app={app} job={job} />
               ))}
-               {canReport ? (
-                  <Button className="h-11 bg-success font-bold hover:bg-success/90" onClick={() => setReviewOpen(true)}>
-                    <CheckCircle2 aria-hidden="true" />
-                    Mark Completed & Rate
-                  </Button>
-                ) : null}
-                {canReport && job.status === 'IN_PROGRESS' ? (
-                  <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
-                    Report Cancelled / Gigster No-Show
-                  </Button>
-                ) : null}
-                {canReport && job.status === 'IN_PROGRESS' ? (
-                  <p className="text-xs text-muted-foreground">
-                    Reporting starts a 24-hour appeal window for the gigster. If no appeal is filed, 1 GigCoin is refunded to your balance.
-                  </p>
-                ) : null}
-                {canReport && job.status === 'CANCELLED' && job.reportId ? (
-                  <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
-                    Report Cancelled / Gigster No-Show
-                  </Button>
-                ) : null}
+               {canReport && job.status === 'IN_PROGRESS' ? (
+                 <Button className="h-11 bg-success font-bold hover:bg-success/90" onClick={() => setReviewOpen(true)}>
+                   <CheckCircle2 aria-hidden="true" />
+                   Mark Completed &amp; Rate
+                 </Button>
+               ) : null}
+               {canReport && job.status === 'IN_PROGRESS' ? (
+                 <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
+                   Report Cancelled / Gigster No-Show
+                 </Button>
+               ) : null}
+               {canReport && job.status === 'IN_PROGRESS' ? (
+                 <p className="text-xs text-muted-foreground">
+                   Reporting starts a 24-hour appeal window for the gigster. If no appeal is filed, 1 GigCoin is refunded to your balance.
+                 </p>
+               ) : null}
+               {canReport && job.status === 'CANCELLED' && !job.reportId ? (
+                 <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
+                   Report Gigster Cancelled
+                 </Button>
+               ) : null}
+               {canReport && job.status === 'CANCELLED' && !job.reportId ? (
+                 <p className="text-xs text-muted-foreground">
+                   Reporting the gigster starts a 24-hour appeal window. If no appeal is filed, 1 GigCoin is refunded to your balance.
+                 </p>
+               ) : null}
+               {canReport && job.status === 'CANCELLED' && job.reportId ? (
+                 <Button variant="destructive" className="h-10 font-semibold" onClick={() => setReportOpen(true)}>
+                   Report Cancelled / Gigster No-Show
+                 </Button>
+               ) : null}
                 {canReport && job.status === 'CANCELLED' && job.reportId ? (
                   <p className="text-xs text-muted-foreground">
                     The gigster has already reported you. You can still file a counter-report within the appeal window.
@@ -338,7 +350,7 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
                 disabled={cancelling}
               >
                 <X className="size-4" />
-                Cancel gig
+                Cancel Gig
               </Button>
               <div className="text-xs leading-relaxed">
                 {!hasApplicants ? (
@@ -363,23 +375,23 @@ function PostedJobCard({ job, isExpanded, onToggle }: { job: JobPostDTO; isExpan
        {accepted ? (
          <ReviewDialog job={job} worker={accepted.applicant} open={reviewOpen} onOpenChange={setReviewOpen} />
        ) : null}
-       <ReportNoShowModal
-         open={reportOpen}
-         onOpenChange={setReportOpen}
-         reasons={['Gigster Cancelled', 'Gigster No-Show']}
-         loading={reporting}
-         onSubmit={async (reason, note) => {
-           setReporting(true)
-           try {
-             await api.jobs.reportNoShow(job.id, { reason, note })
-             toast.success('Report submitted')
-             setReportOpen(false)
-             await refreshAll()
-           } finally {
-             setReporting(false)
-           }
-         }}
-       />
+<ReportNoShowModal
+          open={reportOpen}
+          onOpenChange={setReportOpen}
+          reasons={['Gigster Cancelled', 'Gigster No-Show']}
+          loading={reporting}
+onSubmit={async (_reason, _note) => {
+            setReporting(true)
+            try {
+              await api.jobs.reportNoShow(job.id)
+              toast.success('Report submitted')
+              setReportOpen(false)
+              await refreshAll()
+            } finally {
+              setReporting(false)
+            }
+          }}
+        />
       <ConfirmDialog
         open={confirmCancel}
         onOpenChange={setConfirmCancel}
@@ -671,6 +683,7 @@ function AppliedTab() {
         ? apps.filter((a) => a.status === 'PENDING' || a.status === 'INVITED')
         : apps.filter((a) => a.status === filter)
   const cancelTargetTitle = useMemo(() => cancelTarget?.job?.title ?? 'this gig', [cancelTarget])
+  const isWithdrawing = cancelTarget?.status === 'ACCEPTED'
 
   // Sync status changes across tabs/windows (mock DB writes to localStorage).
   useEffect(() => {
@@ -775,7 +788,7 @@ function AppliedTab() {
                    </div>
                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <UserAvatar user={app.job.poster} className="size-5 text-[9px]" />
-                    <span className="truncate">{app.job.poster.fullName}</span>
+                    <span className="truncate">{app.job.poster?.fullName ?? 'Client'}</span>
                     <span aria-hidden="true">·</span>
                     <span className="font-bold text-success dark:text-emerald-400">{formatPay(app.job.amount, app.job.compensationType)}</span>
                   </div>
@@ -791,7 +804,7 @@ function AppliedTab() {
                      Gig completed. Great work!
                    </p>
                  ) : (
-                   <ContactBar contact={app.posterContact} name={app.job.poster.fullName} />
+                   <ContactBar contact={app.posterContact} name={app.job.poster?.fullName ?? 'Client'} />
                  )
                ) : app.status === 'INVITED' ? (
                  <>
@@ -803,7 +816,7 @@ function AppliedTab() {
                ) : app.status === 'PENDING' ? (
                  <p className="text-xs text-muted-foreground">🔒 Messaging & contact details unlock once the client screens or accepts your application.</p>
                ) : null}
-               <div className="flex gap-2">
+               <div className="flex flex-col gap-2">
                  {app.status === 'INVITED' ? (
                    <div className="grid w-full grid-cols-2 gap-2">
                      <Button
@@ -833,32 +846,45 @@ function AppliedTab() {
                      </Button>
                    </div>
                  ) : null}
-                  {app.status === 'SCREENING' || app.status === 'ACCEPTED' ? (
-                    <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
-                      <MessageCircle aria-hidden="true" />
-                      {app.job ? `Message ${app.job.poster.fullName.split(' ')[0]}` : 'Message client'}
-                    </Link>
+{app.status === 'SCREENING' || app.status === 'ACCEPTED' ? (
+                    <>
+                      <Link to={`/messages/${app.id}`} className={cn(buttonVariants({ variant: 'outline' }), 'h-10 w-full font-bold')}>
+                        <MessageCircle aria-hidden="true" />
+                        {app.job ? `Message ${(app.job.poster?.fullName ?? 'Client').split(' ')[0]}` : 'Message client'}
+                      </Link>
+                      {app.job?.status !== 'COMPLETED' && app.job?.status !== 'CANCELLED' ? (
+                        <Button
+                          variant="destructive"
+                          className="h-10 w-full font-bold"
+                          onClick={() => setCancelTarget(app)}
+                          disabled={cancellingId === app.id}
+                        >
+                          {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+                          {app.status === 'ACCEPTED' ? 'Withdraw from Gig' : 'Cancel'}
+                        </Button>
+                      ) : null}
+                    </>
                   ) : null}
                   {!app.reportedByMe &&
                     app.status !== 'REJECTED' &&
                     app.job?.status !== 'COMPLETED' &&
                     (app.status === 'ACCEPTED' || app.job?.status === 'CANCELLED') ? (
                     <Button variant="destructive" className="h-10 w-full font-bold" onClick={() => setReportTarget(app)}>
-                      Report Cancelled / Client No-Show
+                      {app.job?.status === 'CANCELLED' ? 'Report Client Cancelled / No-Show' : 'Report Cancelled / Client No-Show'}
                     </Button>
                   ) : null}
-                 {app.status === 'PENDING' || app.status === 'SCREENING' ? (
-                   <Button
-                     variant="destructive"
-                     className="h-10 w-full font-bold"
-                     onClick={() => setCancelTarget(app)}
-                     disabled={cancellingId === app.id}
-                   >
-                     {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
-                     Cancel
-                   </Button>
-                 ) : null}
-               </div>
+                  {app.status === 'PENDING' && (
+                    <Button
+                      variant="destructive"
+                      className="h-10 w-full font-bold"
+                      onClick={() => setCancelTarget(app)}
+                      disabled={cancellingId === app.id}
+                    >
+                      {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
+                      {app.status === 'ACCEPTED' ? 'Withdraw from Gig' : 'Cancel'}
+                    </Button>
+                  )}
+                </div>
             </article>
           </li>
         ))}
@@ -869,11 +895,11 @@ function AppliedTab() {
         onOpenChange={(o) => !o && setReportTarget(null)}
         reasons={['Client Cancelled', 'Client No-Show']}
         loading={reporting}
-        onSubmit={async (reason, note) => {
+        onSubmit={async (_reason, _note) => {
           if (!reportTarget) return
           setReporting(true)
           try {
-            await api.applications.reportNoShow(reportTarget.id, { reason, note })
+            await api.applications.reportNoShow(reportTarget.id)
             toast.success('Report submitted')
             setReportTarget(null)
             await refreshAll()
@@ -886,9 +912,11 @@ function AppliedTab() {
         open={cancelTarget != null}
         onOpenChange={(open) => !open && setCancelTarget(null)}
         intent="destructive"
-        title="Cancel your application?"
-        description={`Your pitch for "${cancelTargetTitle}" will be withdrawn. You can apply again later if the gig is still open.`}
-        confirmLabel="Cancel application"
+        title={isWithdrawing ? 'Withdraw from gig?' : 'Cancel your application?'}
+        description={isWithdrawing
+          ? `Withdrawing from "${cancelTargetTitle}" will reopen the gig for other applicants and notify the client. Your application will be cancelled.`
+          : `Your pitch for "${cancelTargetTitle}" will be withdrawn. You can apply again later if the gig is still open.`}
+        confirmLabel={isWithdrawing ? 'Withdraw from gig' : 'Cancel application'}
         cancelLabel="Keep application"
         loading={cancellingId != null}
         onConfirm={cancel}

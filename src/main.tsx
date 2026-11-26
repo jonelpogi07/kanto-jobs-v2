@@ -7,7 +7,6 @@ import { ThemeProvider } from '@/context/ThemeContext'
 import { AuthProvider } from '@/lib/auth'
 import { LocationProvider } from '@/lib/location'
 import { App } from './App'
-import { evaluateGigCoinRefunds, resetMockDb, simulate24hElapsed } from '@/mocks/handlers'
 import '@flaticon/flaticon-uicons/css/solid/rounded.css'
 import './index.css'
 
@@ -41,15 +40,6 @@ if ('serviceWorker' in navigator) {
     refreshing = true
     window.location.reload()
   })
-}
-
-// Dev-only debug helpers for the mock layer (e.g. console: window.__kantoMock.simulate24hElapsed())
-if (import.meta.env.DEV) {
-  ;(window as unknown as { __kantoMock?: Record<string, unknown> }).__kantoMock = {
-    evaluateGigCoinRefunds,
-    simulate24hElapsed,
-    resetMockDb,
-  }
 }
 
 createRoot(document.getElementById('root')!).render(

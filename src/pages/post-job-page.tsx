@@ -98,8 +98,6 @@ function PostJobForm() {
     barangay: string
     city: string
     landmark: string
-    latitude: number
-    longitude: number
     timing: JobTiming
     scheduledAt: string | null
     estimatedDuration: string | null
@@ -188,10 +186,7 @@ function PostJobForm() {
     setConfirmationStep('searching')
     setSearchError(null)
     try {
-      const loc = options.find((o) => `${o.barangay}|${o.city}` === locationKey) ?? location
       const response = await api.jobs.searchNearbyGigsters({
-        latitude: loc.latitude,
-        longitude: loc.longitude,
         maxDistanceKm: 10,
         category: jobData.category,
       })
@@ -251,9 +246,9 @@ function PostJobForm() {
       }
       return
     }
-    const loc = options.find((o) => `${o.barangay}|${o.city}` === locationKey) ?? location
     const isMerchantGig = isBusinessMerchant
-    const jobData = {
+      const loc = options.find((o) => `${o.barangay}|${o.city}` === locationKey) ?? location
+      const jobData = {
       title: title.trim(),
       category: category!,
       description: description.trim(),
@@ -263,8 +258,6 @@ function PostJobForm() {
       barangay: loc.barangay,
       city: loc.city,
       landmark: landmark.trim(),
-      latitude: loc.latitude,
-      longitude: loc.longitude,
       timing,
       scheduledAt: timing === 'SCHEDULED' ? new Date(scheduledAt).toISOString() : null,
       estimatedDuration: duration.trim() || null,
@@ -591,20 +584,20 @@ function PostJobForm() {
                       <span className="text-muted-foreground">You can still post your gig, but notifications may not reach nearby gigsters.</span>
                     </>
                   ) : nearbyGigstersCount > 0 ? (
-                    <p className="text-muted-foreground">We'll notify matching gigsters in your area once posted.</p>
+                    <span className="block text-muted-foreground">We'll notify matching gigsters in your area once posted.</span>
                   ) : (
-                    <p className="text-muted-foreground">You can still publish your gig so gigsters can discover and apply.</p>
+                    <span className="block text-muted-foreground">You can still publish your gig so gigsters can discover and apply.</span>
                   )}
-                  <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/50 border border-border">
+                  <span className="flex items-center gap-2 p-3 rounded-xl bg-muted/50 border border-border">
                     <Coins className="size-5 text-primary" aria-hidden="true" />
-                    <div>
-                      <p className="font-medium">Do you want to publish your gig post? <strong>(1 GigCoin)</strong></p>
-                      <p className="text-xs text-muted-foreground">
+                    <span className="block">
+                      <span className="block font-medium">Do you want to publish your gig post? <strong>(1 GigCoin)</strong></span>
+                      <span className="block text-xs text-muted-foreground">
                         Your balance: <strong>{userGigCoins} GigCoin{userGigCoins !== 1 ? 's' : ''}</strong>
                         {hasInsufficientCoins && <span className="text-destructive ml-2">(Insufficient balance)</span>}
-                      </p>
-                    </div>
-                  </div>
+                      </span>
+                    </span>
+                  </span>
                 </DialogDescription>
               </>
             )}

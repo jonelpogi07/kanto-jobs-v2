@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
-import { LOCATIONS } from '@/mocks/data'
+import { LOCATIONS } from '@/lib/locations'
 import type { LocationOption } from '@/types'
 
 const LOCATION_KEY = 'kanto-jobs:location'
@@ -8,7 +8,6 @@ interface LocationContextValue {
   location: LocationOption
   options: LocationOption[]
   setLocation: (location: LocationOption) => void
-  coords: { lat: number; lng: number }
 }
 
 const LocationContext = createContext<LocationContextValue | null>(null)
@@ -36,7 +35,6 @@ export function LocationProvider({ children }: { children: ReactNode }) {
       location,
       options: LOCATIONS,
       setLocation,
-      coords: { lat: location.latitude, lng: location.longitude },
     }),
     [location, setLocation],
   )

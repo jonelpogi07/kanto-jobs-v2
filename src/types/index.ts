@@ -74,6 +74,8 @@ export interface AppealDTO {
 export interface UserSummaryDTO {
   id: number
   fullName: string
+  firstName: string
+  lastName: string
   avatarUrl: string | null
   barangay: string
   city: string
@@ -126,8 +128,6 @@ export interface JobPostDTO {
   barangay: string
   city: string
   landmark: string
-  latitude: number
-  longitude: number
   /** Computed server-side from the caller's lat/lng query params. */
   distanceKm: number | null
   timing: JobTiming
@@ -254,15 +254,24 @@ export interface ApiErrorDTO {
 // ---------- Requests ----------
 
 export interface LoginRequest {
-  /** Mobile number (09XXXXXXXXX) or email. */
-  identifier: string
+  /** Email address (backend expects email). */
+  email: string
   password: string
+  /** @deprecated Use email instead. Kept for backward compatibility with mock layer. */
+  identifier?: string
 }
 
 export interface RegisterRequest {
-  fullName: string
-  identifier: string
+  email: string
   password: string
+  firstName: string
+  lastName: string
+  barangay?: string
+  city?: string
+  /** @deprecated Use email instead. Kept for backward compatibility with mock layer. */
+  identifier?: string
+  /** @deprecated Use firstName + lastName instead. Kept for backward compatibility with mock layer. */
+  fullName?: string
 }
 
 export interface AuthResponse {
@@ -294,8 +303,6 @@ export interface CreateJobPostRequest {
   barangay: string
   city: string
   landmark: string
-  latitude: number
-  longitude: number
   timing: JobTiming
   scheduledAt: string | null
   estimatedDuration: string | null
@@ -320,8 +327,6 @@ export interface UpdateJobPostRequest {
   barangay: string
   city: string
   landmark: string
-  latitude: number
-  longitude: number
   timing: JobTiming
   scheduledAt: string | null
   estimatedDuration: string | null
@@ -343,6 +348,13 @@ export interface CreateApplicationRequest {
 export interface CreateReviewRequest {
   rating: number
   comment: string
+}
+
+export interface CreateReportRequest {
+  jobId: number
+  applicationId?: number
+  reason: string
+  note?: string
 }
 
 export interface SendMessageRequest {
@@ -368,9 +380,8 @@ export interface JobSearchParams {
 /** A selectable barangay/city with approximate coordinates. */
 export interface LocationOption {
   barangay: string
+  municipality: string
   city: string
-  latitude: number
-  longitude: number
 }
 
 export interface NearbyGigsterDTO {
@@ -388,8 +399,6 @@ export interface NearbyGigsterDTO {
 }
 
 export interface SearchNearbyGigstersRequest {
-  latitude: number
-  longitude: number
   maxDistanceKm?: number
   category?: JobCategory
 }
