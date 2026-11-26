@@ -95,6 +95,7 @@ export interface UserSummaryDTO {
 export interface UserDTO extends UserSummaryDTO {
   email: string | null
   phoneNumber: string | null
+  address?: string
   bio: string
   skills: string[]
   completedGigs: number
@@ -285,6 +286,7 @@ export interface UpdateUserRequest {
   fullName: string
   barangay: string
   city: string
+  address?: string
   bio: string
   skills: string[]
   avatarUrl: string | null

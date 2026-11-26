@@ -64,9 +64,13 @@ function toPage<T>(list: T[], page = 0, size = 20): Page<T> {
 }
 
 function mapUserDTO(backendUser: UserDTO): UserDTO {
+  const address = backendUser.address ?? ''
+  const parts = address.split(', ')
   return {
     ...backendUser,
     fullName: `${backendUser.firstName} ${backendUser.lastName}`.trim(),
+    barangay: parts[0] ?? '',
+    city: parts.slice(1).join(', ') ?? '',
   }
 }
 
@@ -94,7 +98,7 @@ function mapRegisterRequest(req: RegisterRequest): {
     password: req.password,
     firstName: req.firstName ?? req.fullName?.split(' ')[0] ?? '',
     lastName: req.lastName ?? req.fullName?.split(' ').slice(1).join(' ') ?? '',
-    barangay: req.barangay ?? 'Culubasa',
+    barangay: req.barangay ?? 'Anupul',
     city: req.city ?? 'Bamban, Tarlac',
   }
 }

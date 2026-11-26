@@ -86,7 +86,7 @@ function ProfileContent() {
           <h2 className="text-xl font-extrabold">{user.fullName}</h2>
           <p className="flex items-center gap-1 text-sm text-muted-foreground">
             <MapPin className="size-3.5 text-primary" aria-hidden="true" />
-            {`${user.barangay}, ${user.city}`}
+            {user.address ?? `${user.barangay ?? ''}, ${user.city ?? ''}`}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">

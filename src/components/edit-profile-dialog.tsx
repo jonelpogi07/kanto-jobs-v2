@@ -25,7 +25,7 @@ import type { RateType, UserDTO, JobCategory } from '@/types'
 const selectClass =
   'h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 
-const DEFAULT_BARANGAY = 'Culubasa'
+const DEFAULT_BARANGAY = 'Anupul'
 const DEFAULT_CITY = 'Bamban, Tarlac'
 
 export function EditProfileDialog({
@@ -111,11 +111,12 @@ export function EditProfileDialog({
     try {
       const [barangay, city] = locationKey.split('|')
       const sortedDays = sortDays(availableDays)
-      const updated = await api.users.updateMe({
-        fullName,
-        barangay,
-        city,
-        bio,
+       const updated = await api.users.updateMe({
+         fullName,
+         barangay,
+         city,
+         address: `${barangay}, ${city}`,
+         bio,
         skills,
         avatarUrl: user.avatarUrl,
         availableDays: sortedDays,
