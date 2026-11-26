@@ -573,10 +573,6 @@ export const mockApi: KantoApi = {
       save()
       return authResponse(user)
     },
-    async loginWithGoogle() {
-      await delay()
-      return authResponse(findUser(1))
-    },
   },
 
   users: {

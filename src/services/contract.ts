@@ -33,8 +33,6 @@ export interface KantoApi {
     login(req: LoginRequest): Promise<AuthResponse>
     /** POST /auth/register */
     register(req: RegisterRequest): Promise<AuthResponse>
-    /** POST /auth/google  — body: { idToken } */
-    loginWithGoogle(idToken: string): Promise<AuthResponse>
   }
   users: {
     /** GET /users/me */

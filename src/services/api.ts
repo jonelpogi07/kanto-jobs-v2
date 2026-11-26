@@ -52,7 +52,6 @@ const springBootApi: KantoApi = {
   auth: {
     login: (req) => data(http.post<AuthResponse>('/auth/login', req)),
     register: (req) => data(http.post<AuthResponse>('/auth/register', req)),
-    loginWithGoogle: (idToken) => data(http.post<AuthResponse>('/auth/google', { idToken })),
   },
   users: {
     me: () => data(http.get<UserDTO>('/users/me')),

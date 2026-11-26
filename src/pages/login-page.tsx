@@ -24,7 +24,7 @@ export function LoginPage() {
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [submitting, setSubmitting] = useState<'form' | 'google' | null>(null)
+  const [submitting, setSubmitting] = useState<'form' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function finish(promise: Promise<Awaited<ReturnType<typeof api.auth.login>>>) {
@@ -51,12 +51,6 @@ export function LoginPage() {
         ? api.auth.login({ identifier, password })
         : api.auth.register({ fullName, identifier, password }),
     )
-  }
-
-  function onGoogle() {
-    setSubmitting('google')
-    // Real flow: obtain an ID token from Google Identity Services, then POST it to /auth/google.
-    void finish(api.auth.loginWithGoogle('mock-google-id-token'))
   }
 
   return (
@@ -174,21 +168,6 @@ export function LoginPage() {
         or
         <span className="h-px flex-1 bg-border" />
       </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="h-12 bg-card text-base font-semibold"
-        onClick={onGoogle}
-        disabled={submitting !== null}
-      >
-        {submitting === 'google' ? (
-          <Loader2 className="animate-spin" aria-hidden="true" />
-        ) : (
-          <img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/google/default.svg" alt="" className="size-5" />
-        )}
-        Continue with Google
-      </Button>
 
       {USE_MOCKS && mode === 'login' ? (
         <div className="mt-6 flex flex-col gap-3">
