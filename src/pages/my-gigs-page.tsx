@@ -881,7 +881,7 @@ function AppliedTab() {
                       disabled={cancellingId === app.id}
                     >
                       {cancellingId === app.id ? <Loader2 className="animate-spin" aria-hidden="true" /> : <X className="size-4" />}
-                      {app.status === 'ACCEPTED' ? 'Withdraw from Gig' : 'Cancel'}
+                      Cancel
                     </Button>
                   )}
                 </div>
