@@ -42,18 +42,30 @@ export function useUserReviews(userId: number | undefined) {
 export const CHAT_THREADS_KEY = '/chat/threads'
 
 /** Inbox list. Polls so new messages and unread counts stay live. */
-export function useChatThreads() {
+export function useChatThreads(options?: { refreshInterval?: number }) {
   const { isAuthenticated } = useAuth()
   const { mutate } = useSWRConfig()
+  const baseInterval = options?.refreshInterval ?? 5_000
 
   useEffect(() => {
     if (!isAuthenticated) return
     const handler = () => void mutate(CHAT_THREADS_KEY)
     window.addEventListener(CHAT_UPDATE_EVENT, handler)
-    return () => window.removeEventListener(CHAT_UPDATE_EVENT, handler)
+    const onFocus = () => void mutate(CHAT_THREADS_KEY)
+    const onVisibility = () => { if (!document.hidden) void mutate(CHAT_THREADS_KEY) }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener(CHAT_UPDATE_EVENT, handler)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [isAuthenticated, mutate])
 
-  return useSWR(isAuthenticated ? CHAT_THREADS_KEY : null, () => api.chat.threads(), { refreshInterval: 5_000 })
+  return useSWR(isAuthenticated ? CHAT_THREADS_KEY : null, () => api.chat.threads(), {
+    refreshInterval: () => (document.hidden ? 30_000 : baseInterval),
+    revalidateOnFocus: true,
+  })
 }
 
 /** Conversation messages. Polls for live updates; the API marks the thread read. */
@@ -70,10 +82,18 @@ export function useChatMessages(threadId: number | null) {
       }
     }
     window.addEventListener(CHAT_UPDATE_EVENT, handler)
-    return () => window.removeEventListener(CHAT_UPDATE_EVENT, handler)
-  }, [threadId, mutate, key])
+    const onVisibility = () => { if (!document.hidden) void mutate(key) }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener(CHAT_UPDATE_EVENT, handler)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [threadId, mutate])
 
-  return useSWR(key, () => api.chat.messages(threadId!), { refreshInterval: 3_000 })
+  return useSWR(key, () => api.chat.messages(threadId!), {
+    refreshInterval: () => (document.hidden ? 30_000 : 3_000),
+    revalidateOnFocus: true,
+  })
 }
 
 /** Revalidates every cached query after a write. Small app, so a broad refresh keeps things simple. */

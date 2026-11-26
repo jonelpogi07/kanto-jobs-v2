@@ -27,7 +27,7 @@ export function AppShell() {
 }
 
 function BottomNav() {
-  const { data: threads } = useChatThreads()
+  const { data: threads } = useChatThreads({ refreshInterval: 30_000 })
   const unread = (threads ?? [])
     .filter(
       (t) =>
