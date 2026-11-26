@@ -34,8 +34,9 @@ export function MyGigsPage() {
           <button
             type="button"
             className="bg-amber-50 border border-amber-300 text-amber-800 px-3 py-1.5 rounded-full font-semibold text-sm flex items-center gap-1.5"
+            disabled
           >
-            🪙 {user?.gigCoins ?? 2} GigCoins +
+            🪙 {user?.gigCoins ?? 0} GigCoins
           </button>
         }
       />
