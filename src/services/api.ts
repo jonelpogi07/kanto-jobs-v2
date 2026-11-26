@@ -20,7 +20,7 @@ import type { KantoApi } from './contract'
 import { ApiError, tokenStorage } from './token'
 
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'https://kanto-jobs-backend.onrender.com/api/v1',
   timeout: 15_000,
   headers: { 'Content-Type': 'application/json' },
 })
