@@ -23,7 +23,10 @@ export function LoginPage() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [submitting, setSubmitting] = useState<'form' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,11 +48,24 @@ export function LoginPage() {
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
+    if (mode === 'register') {
+      if (!/^(09\d{9}|\+639\d{9})$/.test(phoneNumber)) {
+        setError('Invalid phone number. Use 09XXXXXXXXX or +639XXXXXXXXX.')
+        setSubmitting(null)
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.')
+        setSubmitting(null)
+        return
+      }
+    }
     setSubmitting('form')
     void finish(
       mode === 'login'
         ? api.auth.login({ email, password })
-        : api.auth.register({ email, password, firstName, lastName }),
+        : api.auth.register({ email, password, firstName, lastName, phoneNumber }),
     )
   }
 
@@ -125,6 +141,19 @@ export function LoginPage() {
                 placeholder="Maniego"
               />
             </div>
+             <div className="flex flex-col gap-1.5">
+              <Label htmlFor="phoneNumber">Phone number</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                autoComplete="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                required
+                className="h-11 bg-card"
+                placeholder="09XX XXX XXXX"
+              />
+            </div>
           </>
         ) : null}
 
@@ -166,6 +195,34 @@ export function LoginPage() {
           </div>
         </div>
 
+        {mode === 'register' ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                className="h-11 bg-card pr-11"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((s) => !s)}
+                className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+            {confirmPassword && password !== confirmPassword ? (
+              <p className="text-xs text-destructive">Passwords do not match.</p>
+            ) : null}
+          </div>
+        ) : null}
         {error ? (
           <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
             {error}

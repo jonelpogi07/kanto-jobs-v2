@@ -269,6 +269,7 @@ export interface RegisterRequest {
   lastName: string
   barangay?: string
   city?: string
+  phoneNumber?: string
   /** @deprecated Use email instead. Kept for backward compatibility with mock layer. */
   identifier?: string
   /** @deprecated Use firstName + lastName instead. Kept for backward compatibility with mock layer. */

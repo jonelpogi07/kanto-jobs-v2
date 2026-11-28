@@ -92,6 +92,7 @@ function mapRegisterRequest(req: RegisterRequest): {
   lastName: string
   barangay: string
   city: string
+  phone?: string
 } {
   return {
     email: req.email ?? req.identifier!,
@@ -100,6 +101,7 @@ function mapRegisterRequest(req: RegisterRequest): {
     lastName: req.lastName ?? req.fullName?.split(' ').slice(1).join(' ') ?? '',
     barangay: req.barangay ?? 'Anupul',
     city: req.city ?? 'Bamban, Tarlac',
+    phone: req.phoneNumber,
   }
 }
 
