@@ -94,10 +94,19 @@ export interface UserSummaryDTO {
 
 export interface UserDTO extends UserSummaryDTO {
   email: string | null
+  /** @deprecated Backend returns `phone`. Kept for the contact-bar summary type. */
   phoneNumber: string | null
+  phone?: string | null
   address?: string
+  /** Raw backend avatar field. `avatarUrl` is derived from this in the mapper. */
+  profileImage?: string | null
   bio: string
   skills: string[]
+  contact?: ContactInfoDTO | null
+  viberNumber?: string | null
+  messengerUsername?: string | null
+  merchantId?: number | null
+  merchantName?: string | null
   completedGigs: number
   gigCoins: number
   createdAt: string
@@ -283,17 +292,23 @@ export interface AuthResponse {
   user: UserDTO
 }
 
+/**
+ * Body for `PUT /users/me`. Mirrors the backend `UpdateUserRequest` exactly.
+ * Every field is optional; the backend only overwrites non-null values.
+ * NOTE: `email`, `contact`, `viberNumber` and `messengerUsername` are NOT
+ * part of the contract and therefore cannot be changed here.
+ */
 export interface UpdateUserRequest {
-  fullName: string
-  barangay: string
-  city: string
+  firstName?: string
+  lastName?: string
+  phone?: string
   address?: string
-  bio: string
-  skills: string[]
-  avatarUrl: string | null
-  isNegotiable?: boolean
+  profileImage?: string | null
+  bio?: string
+  skills?: string[]
   availableDays?: string[]
   rateType?: RateType
+  isNegotiable?: boolean
 }
 
 export interface CreateJobPostRequest {

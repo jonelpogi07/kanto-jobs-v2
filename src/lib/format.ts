@@ -35,6 +35,23 @@ export const RATE_TYPE_LABELS: Record<RateType, string> = {
   both: 'Per Hour / Per Gig',
 }
 
+/** Profile display labels for the preferred rate type. */
+export const RATE_TYPE_VIEW_LABELS: Record<RateType, string> = {
+  hourly: 'Hourly',
+  per_gig: 'Fixed',
+  both: 'Hourly & Fixed',
+}
+
+const memberSinceFormat = new Intl.DateTimeFormat('en-PH', { month: 'short', year: 'numeric' })
+
+/** Formats an ISO timestamp as "MMM YYYY" (e.g. "Nov 2026"). */
+export function formatMemberSince(iso?: string | null) {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  return memberSinceFormat.format(date)
+}
+
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   CASH: 'Cash',
   GCASH: 'GCash',

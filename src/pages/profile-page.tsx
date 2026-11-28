@@ -1,7 +1,26 @@
-import { useEffect, useRef, useState } from 'react'
-import { Camera, LogOut, MapPin, Pencil, ShieldAlert } from 'lucide-react'
+import { useRef, useState } from 'react'
+import {
+  BadgeCheck,
+  Building2,
+  Calendar,
+  Camera,
+  Clock,
+  Coins,
+  Infinity as InfinityIcon,
+  LogOut,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Pencil,
+  Phone,
+  RefreshCw,
+  Send,
+  ShieldAlert,
+} from 'lucide-react'
+import { toast } from 'sonner'
+import { useSWRConfig } from 'swr'
 import { Button } from '@/components/ui/button'
-import { SkillTag, VerifiedBadge, BusinessBadge } from '@/components/badges'
+import { SkillTag, VerifiedBadge } from '@/components/badges'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { EditProfileDialog } from '@/components/edit-profile-dialog'
 import { PageHeader } from '@/components/layout/app-shell'
@@ -9,11 +28,11 @@ import { Stars } from '@/components/rating'
 import { RequireAuth } from '@/components/require-auth'
 import { UserAvatar } from '@/components/user-avatar'
 import { useUserReviews } from '@/hooks/use-api'
-import { useSWRConfig } from 'swr'
-import { useAuth, ME_KEY } from '@/lib/auth'
-import { tokenStorage } from '@/services/token'
-import { timeAgo, WEEKDAYS, CATEGORY_LABELS } from '@/lib/format'
+import { ME_KEY, useAuth } from '@/lib/auth'
+import { timeAgo, WEEKDAYS, CATEGORY_LABELS, formatMemberSince, RATE_TYPE_VIEW_LABELS } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { api } from '@/services/api'
+import { tokenStorage } from '@/services/token'
 import type { UserDTO } from '@/types'
 
 export function ProfilePage() {
@@ -32,40 +51,37 @@ function ProfileContent() {
   const { mutate } = useSWRConfig()
   const [editing, setEditing] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
-  const [workingDays, setWorkingDays] = useState<string[]>(() => readWorkingDays(user?.id))
+  const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    const saved = localStorage.getItem(`profileAvatar:${user?.id}`)
-    if (saved && user && user.avatarUrl !== saved) {
-      void mutate([ME_KEY, tokenStorage.get()], (u: any) => (u ? { ...u, avatarUrl: saved } : u), { revalidate: false })
-    }
-  }, [user?.id])
-  useEffect(() => {
-    if (!user?.id) return
-    setWorkingDays(readWorkingDays(user.id))
-  }, [user?.id])
-  useEffect(() => {
-    if (!user?.id) return
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === `profileWorkingDays:${user.id}`) setWorkingDays(readWorkingDays(user.id))
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [user?.id])
+
   if (!user) return null
 
-  function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.onload = async () => {
       const dataUrl = String(reader.result)
-      localStorage.setItem(`profileAvatar:${user!.id}`, dataUrl)
-      void mutate([ME_KEY, tokenStorage.get()], (u: any) => (u ? { ...u, avatarUrl: dataUrl } : u), { revalidate: false })
+      setUploading(true)
+      try {
+        await api.users.updateMe({ profileImage: dataUrl })
+        await mutate([ME_KEY, tokenStorage.get()])
+        toast.success('Profile photo updated')
+      } catch (err) {
+        toast.error('Could not update photo', {
+          description: err instanceof Error ? err.message : 'Please try again.',
+        })
+      } finally {
+        setUploading(false)
+      }
     }
     reader.readAsDataURL(file)
     e.target.value = ''
   }
+
+  const address = user.address ?? [user.barangay, user.city].filter(Boolean).join(', ')
+  const memberSince = formatMemberSince(user.createdAt)
+  const gigCoins = user.gigCoins ?? 0
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
@@ -75,20 +91,37 @@ function ProfileContent() {
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow"
+            disabled={uploading}
+            className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow disabled:opacity-60"
             aria-label="Change profile picture"
           >
             <Camera className="size-3.5" aria-hidden="true" />
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
         </div>
+
         <div className="flex flex-col items-center gap-1">
           <h2 className="text-xl font-extrabold">{user.fullName}</h2>
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
-            <MapPin className="size-3.5 text-primary" aria-hidden="true" />
-            {user.address ?? `${user.barangay ?? ''}, ${user.city ?? ''}`}
-          </p>
+          {address ? (
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="size-3.5 text-primary" aria-hidden="true" />
+              {address}
+            </p>
+          ) : null}
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            {memberSince ? (
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="size-3.5" aria-hidden="true" />
+                Member since {memberSince}
+              </span>
+            ) : null}
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+              <Coins className="size-3.5" aria-hidden="true" />
+              {gigCoins} GigCoin{gigCoins !== 1 ? 's' : ''}
+            </span>
+          </div>
         </div>
+
         <div className="flex flex-wrap items-center justify-center gap-2">
           {user.phoneVerified ? (
             <VerifiedBadge />
@@ -98,11 +131,14 @@ function ProfileContent() {
               Phone not verified
             </span>
           )}
-          {user.isBusinessMerchant === true && user.merchantPartnershipActive === true ? (
-            <BusinessBadge name={user.merchantBusinessName} />
-          ) : null}
         </div>
-        {user.bio ? <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p> : null}
+
+        {user.bio ? (
+          <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p>
+        ) : (
+          <p className="text-sm italic text-muted-foreground">No bio added yet.</p>
+        )}
+
         <Button variant="outline" className="mt-1 h-10 w-full" onClick={() => setEditing(true)}>
           <Pencil aria-hidden="true" />
           Edit Profile
@@ -111,7 +147,11 @@ function ProfileContent() {
 
       <Stats user={user} />
 
-      <WorkingDays days={workingDays} />
+      <ContactCard user={user} />
+
+      <WorkPreferences user={user} />
+
+      <MerchantCard user={user} />
 
       <section aria-labelledby="skills-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <h2 id="skills-heading" className="text-sm font-bold">
@@ -140,12 +180,7 @@ function ProfileContent() {
       </Button>
 
       {editing ? (
-        <EditProfileDialog
-          user={user}
-          open={editing}
-          onOpenChange={setEditing}
-          onWorkingDaysChange={setWorkingDays}
-        />
+        <EditProfileDialog user={user} open={editing} onOpenChange={setEditing} />
       ) : null}
       <ConfirmDialog
         open={confirmLogout}
@@ -167,8 +202,8 @@ function ProfileContent() {
 function Stats({ user }: { user: UserDTO }) {
   const items = [
     { label: 'Rating', value: user.ratingCount ? user.ratingAverage.toFixed(1) : '—' },
-    { label: 'Reviews', value: String(user.ratingCount) },
-    { label: 'Gigs done', value: String(user.completedGigs) },
+    { label: 'Reviews', value: String(user.ratingCount ?? 0) },
+    { label: 'Gigs done', value: String(user.completedGigs ?? 0) },
   ]
   return (
     <dl className="grid grid-cols-3 divide-x divide-border rounded-2xl border border-border bg-card py-3">
@@ -179,6 +214,160 @@ function Stats({ user }: { user: UserDTO }) {
         </div>
       ))}
     </dl>
+  )
+}
+
+function ContactRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  const empty = !value || value === 'Not set'
+  return (
+    <li className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+        <p className={cn('truncate text-sm', empty ? 'italic text-muted-foreground' : 'font-medium text-foreground')}>
+          {value}
+        </p>
+      </div>
+    </li>
+  )
+}
+
+function ContactCard({ user }: { user: UserDTO }) {
+  const rows: { icon: React.ReactNode; label: string; value: string }[] = [
+    { icon: <Mail className="size-4" aria-hidden="true" />, label: 'Email', value: user.email ?? 'Not set' },
+    { icon: <Phone className="size-4" aria-hidden="true" />, label: 'Phone', value: user.phone ?? 'Not set' },
+    {
+      icon: <MessageCircle className="size-4" aria-hidden="true" />,
+      label: 'Contact',
+      value: user.contact?.phoneNumber ?? 'Not set',
+    },
+    {
+      icon: <Send className="size-4" aria-hidden="true" />,
+      label: 'Viber',
+      value: user.viberNumber ?? 'Not set',
+    },
+    {
+      icon: <MessageCircle className="size-4" aria-hidden="true" />,
+      label: 'Messenger',
+      value: user.messengerUsername ?? 'Not set',
+    },
+  ]
+
+  return (
+    <section aria-labelledby="contact-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+      <h2 id="contact-heading" className="text-sm font-bold">
+        Contact &amp; Social Details
+      </h2>
+      <ul className="flex flex-col divide-y divide-border">
+        {rows.map((r) => (
+          <ContactRow key={r.label} icon={r.icon} label={r.label} value={r.value} />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function WorkPreferences({ user }: { user: UserDTO }) {
+  const safeDays = user.availableDays ?? []
+  const anytime = safeDays.length === WEEKDAYS.length
+  const selected = anytime ? [] : WEEKDAYS.filter((d) => safeDays.includes(d))
+
+  const rateLabel = user.rateType ? RATE_TYPE_VIEW_LABELS[user.rateType] : 'Not specified'
+
+  let negotiableLabel = 'Not specified'
+  let negotiableClass = 'border-border bg-secondary text-muted-foreground'
+  if (user.isNegotiable === true) {
+    negotiableLabel = 'Negotiable'
+    negotiableClass = 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/30 dark:bg-amber-900/10 dark:text-amber-300'
+  } else if (user.isNegotiable === false) {
+    negotiableLabel = 'Fixed rate'
+    negotiableClass = 'border-border bg-secondary text-foreground'
+  }
+
+  return (
+    <section aria-labelledby="work-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+      <h2 id="work-heading" className="text-sm font-bold">
+        Work Preferences &amp; Rates
+      </h2>
+
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[11px] font-medium text-muted-foreground">Working Days</p>
+        {safeDays.length === 0 ? (
+          <p className="text-sm italic text-muted-foreground">Not set</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {anytime ? (
+              <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600 dark:border-orange-400/30 dark:bg-orange-500/15 dark:text-orange-300">
+                Anytime
+              </span>
+            ) : (
+              selected.map((day) => (
+                <span
+                  key={day}
+                  className="inline-flex items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-600"
+                >
+                  {day}
+                </span>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
+          <Clock className="size-3.5" aria-hidden="true" />
+          {rateLabel}
+        </span>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
+            negotiableClass,
+          )}
+        >
+          <RefreshCw className="size-3.5" aria-hidden="true" />
+          {negotiableLabel}
+        </span>
+      </div>
+    </section>
+  )
+}
+
+function MerchantCard({ user }: { user: UserDTO }) {
+  const isMerchant =
+    Boolean(user.isBusinessMerchant) || user.merchantId != null || Boolean(user.merchantPartnershipActive)
+  if (!isMerchant) return null
+
+  const name = user.merchantBusinessName ?? user.merchantName ?? 'Business merchant'
+
+  return (
+    <section aria-labelledby="merchant-heading" className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-800/30 dark:bg-amber-900/10">
+      <h2 id="merchant-heading" className="flex items-center gap-1.5 text-sm font-bold text-amber-800 dark:text-amber-300">
+        <Building2 className="size-4" aria-hidden="true" />
+        {name}
+      </h2>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold',
+            user.merchantPartnershipActive
+              ? 'bg-success-soft text-emerald-700 dark:text-emerald-300'
+              : 'bg-secondary text-muted-foreground',
+          )}
+        >
+          <BadgeCheck className="size-3.5" aria-hidden="true" />
+          {user.merchantPartnershipActive ? 'Partnership active' : 'Partnership inactive'}
+        </span>
+        {user.unlimitedGigsterScreening ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-orange-700 dark:text-orange-300">
+            <InfinityIcon className="size-3.5" aria-hidden="true" />
+            Unlimited Gigster Screening
+          </span>
+        ) : null}
+      </div>
+    </section>
   )
 }
 
@@ -220,59 +409,4 @@ function Reviews({ user }: { user: UserDTO }) {
       )}
     </section>
   )
-}
-
-function WorkingDays({ days }: { days: string[] }) {
-  const safeDays = days ?? []
-  const anytime = safeDays.length === WEEKDAYS.length
-  const selected = anytime ? [] : WEEKDAYS.filter((d) => safeDays.includes(d))
-  return (
-    <section aria-labelledby="working-days-heading" className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-      <h2 id="working-days-heading" className="text-sm font-bold">
-        Working Days
-      </h2>
-      {safeDays.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Not set</p>
-      ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {anytime ? (
-            <span
-              className={cn(
-                'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
-                'border-orange-200 bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-400/30',
-              )}
-            >
-              Anytime
-            </span>
-          ) : (
-            selected.map((day) => (
-              <span
-                key={day}
-                className={cn(
-                  'inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold',
-                  'border-orange-200 bg-orange-50 text-orange-600',
-                )}
-              >
-                {day}
-              </span>
-            ))
-          )}
-        </div>
-      )}
-    </section>
-  )
-}
-
-function readWorkingDays(id?: number): string[] {
-  if (typeof window === 'undefined' || !id) return [...WEEKDAYS]
-  try {
-    const raw = localStorage.getItem(`profileWorkingDays:${id}`)
-    if (raw) {
-      const parsed = JSON.parse(raw) as string[]
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed
-    }
-  } catch {
-    // ignore corrupt storage
-  }
-  return [...WEEKDAYS]
 }

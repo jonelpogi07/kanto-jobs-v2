@@ -66,11 +66,21 @@ function toPage<T>(list: T[], page = 0, size = 20): Page<T> {
 function mapUserDTO(backendUser: UserDTO): UserDTO {
   const address = backendUser.address ?? ''
   const parts = address.split(', ')
+  const avatarUrl = backendUser.avatarUrl ?? backendUser.profileImage ?? null
   return {
     ...backendUser,
-    fullName: `${backendUser.firstName} ${backendUser.lastName}`.trim(),
+    avatarUrl,
+    fullName: `${backendUser.firstName ?? ''} ${backendUser.lastName ?? ''}`.trim(),
     barangay: parts[0] ?? '',
     city: parts.slice(1).join(', ') ?? '',
+    bio: backendUser.bio ?? '',
+    skills: backendUser.skills ?? [],
+    availableDays: backendUser.availableDays ?? [],
+    completedGigs: backendUser.completedGigs ?? 0,
+    gigCoins: backendUser.gigCoins ?? 0,
+    ratingAverage: backendUser.ratingAverage ?? 0,
+    ratingCount: backendUser.ratingCount ?? 0,
+    phoneVerified: backendUser.phoneVerified ?? false,
   }
 }
 
