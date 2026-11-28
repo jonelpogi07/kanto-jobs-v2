@@ -59,23 +59,27 @@ function ProfileContent() {
   async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const dataUrl = String(reader.result)
-      setUploading(true)
-      try {
-        await api.users.updateMe({ profileImage: dataUrl })
-        await mutate([ME_KEY, tokenStorage.get()])
-        toast.success('Profile photo updated')
-      } catch (err) {
-        toast.error('Could not update photo', {
-          description: err instanceof Error ? err.message : 'Please try again.',
-        })
-      } finally {
-        setUploading(false)
-      }
+    setUploading(true)
+    try {
+      const base = import.meta.env.VITE_API_BASE_URL ?? 'https://kanto-jobs-backend.onrender.com/api/v1'
+      const fd = new FormData()
+      fd.append('file', file)
+      const token = tokenStorage.get()
+      const res = await fetch(`${base}/uploads/profile`, { method: 'POST', body: fd, headers: token ? { Authorization: `Bearer ${token}` } : {} })
+      const text = await res.text()
+      let json: any = {}
+      try { json = text ? JSON.parse(text) : {} } catch {}
+      if (!res.ok) throw new Error(json?.message || 'Upload failed')
+      await api.users.updateMe({ profileImage: String(json.url ?? json.profileImage ?? '') })
+      await mutate([ME_KEY, tokenStorage.get()])
+      toast.success('Profile photo updated')
+    } catch (err) {
+      toast.error('Could not update photo', {
+        description: err instanceof Error ? err.message : 'Please try again.',
+      })
+    } finally {
+      setUploading(false)
     }
-    reader.readAsDataURL(file)
     e.target.value = ''
   }
 

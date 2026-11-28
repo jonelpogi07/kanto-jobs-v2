@@ -74,12 +74,19 @@ export function EditProfileDialog({
     setIsNegotiable(user.isNegotiable ?? false)
   }, [open, user])
 
-  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setProfileImage(String(reader.result))
-    reader.readAsDataURL(file)
+    const base = import.meta.env.VITE_API_BASE_URL ?? 'https://kanto-jobs-backend.onrender.com/api/v1'
+    const fd = new FormData()
+    fd.append('file', file)
+    const token = tokenStorage.get()
+    const res = await fetch(`${base}/uploads/profile`, { method: 'POST', body: fd, headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    const text = await res.text()
+    let json: any = {}
+    try { json = text ? JSON.parse(text) : {} } catch {}
+    if (!res.ok) throw new Error('Upload failed')
+    setProfileImage(String(json.url ?? json.profileImage ?? ''))
     e.target.value = ''
   }
 
@@ -90,7 +97,6 @@ export function EditProfileDialog({
       await api.users.updateMe({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phone: phone.trim(),
         address: address.trim(),
         bio,
         profileImage: profileImage ?? '',
@@ -184,9 +190,12 @@ export function EditProfileDialog({
               id="ep-phone"
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              disabled
+              readOnly
+              className="bg-muted text-muted-foreground"
               placeholder="09XX XXX XXXX"
             />
+            <p className="text-xs text-muted-foreground">Phone number is tied to your account and cannot be changed here.</p>
           </div>
 
           <div className="flex flex-col gap-1.5">
