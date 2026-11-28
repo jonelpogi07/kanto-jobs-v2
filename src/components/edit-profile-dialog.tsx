@@ -213,14 +213,8 @@ export function EditProfileDialog({
 
           <fieldset className="flex flex-col gap-2 rounded-lg border border-border p-3">
             <legend className="px-1 text-xs font-medium text-muted-foreground">
-              Contact &amp; social (set during verification)
+              Social (set during verification)
             </legend>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="ep-contact" className="text-xs text-muted-foreground">
-                Contact number
-              </Label>
-              <Input id="ep-contact" value={user.contact?.phoneNumber ?? ''} disabled readOnly />
-            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ep-viber" className="text-xs text-muted-foreground">
                 Viber

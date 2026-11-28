@@ -85,30 +85,45 @@ function ProfileContent() {
 
   return (
     <div className="flex flex-col gap-4 px-4 pt-4 pb-6">
-      <section className="flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-6 text-center">
-        <div className="relative">
-          <UserAvatar user={user} className="size-24 text-3xl" />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow disabled:opacity-60"
-            aria-label="Change profile picture"
-          >
-            <Camera className="size-3.5" aria-hidden="true" />
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
+      <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6">
+        <div className="flex items-start gap-4">
+          <div className="relative shrink-0">
+            <UserAvatar user={user} className="size-[70px] text-2xl" />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow disabled:opacity-60"
+              aria-label="Change profile picture"
+            >
+              <Camera className="size-3.5" aria-hidden="true" />
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickAvatar} />
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left">
+            <h2 className="text-xl font-extrabold">{user.fullName}</h2>
+            {address ? (
+              <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                <MapPin className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+                <span className="truncate">{address}</span>
+              </p>
+            ) : null}
+            <div className="mt-0.5">
+              {user.phoneVerified ? (
+                <VerifiedBadge />
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                  <ShieldAlert className="size-3.5" aria-hidden="true" />
+                  Phone not verified
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col items-center gap-1">
-          <h2 className="text-xl font-extrabold">{user.fullName}</h2>
-          {address ? (
-            <p className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="size-3.5 text-primary" aria-hidden="true" />
-              {address}
-            </p>
-          ) : null}
-          <div className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
             {memberSince ? (
               <span className="inline-flex items-center gap-1">
                 <Calendar className="size-3.5" aria-hidden="true" />
@@ -120,36 +135,21 @@ function ProfileContent() {
               {gigCoins} GigCoin{gigCoins !== 1 ? 's' : ''}
             </span>
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {user.phoneVerified ? (
-            <VerifiedBadge />
+          {user.bio ? (
+            <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
-              <ShieldAlert className="size-3.5" aria-hidden="true" />
-              Phone not verified
-            </span>
+            <p className="text-sm italic text-muted-foreground">No bio added yet.</p>
           )}
         </div>
 
-        {user.bio ? (
-          <p className="text-pretty text-sm leading-relaxed text-foreground/80">{user.bio}</p>
-        ) : (
-          <p className="text-sm italic text-muted-foreground">No bio added yet.</p>
-        )}
-
-        <Button variant="outline" className="mt-1 h-10 w-full" onClick={() => setEditing(true)}>
+        <Button variant="outline" className="h-10 w-full" onClick={() => setEditing(true)}>
           <Pencil aria-hidden="true" />
           Edit Profile
         </Button>
       </section>
 
       <Stats user={user} />
-
-      <ContactCard user={user} />
-
-      <WorkPreferences user={user} />
 
       <MerchantCard user={user} />
 
@@ -167,6 +167,10 @@ function ProfileContent() {
           <p className="text-sm text-muted-foreground">Add skills so posters know what you can do.</p>
         )}
       </section>
+
+      <WorkPreferences user={user} />
+
+      <ContactCard user={user} />
 
       <Reviews user={user} />
 
@@ -238,11 +242,6 @@ function ContactCard({ user }: { user: UserDTO }) {
   const rows: { icon: React.ReactNode; label: string; value: string }[] = [
     { icon: <Mail className="size-4" aria-hidden="true" />, label: 'Email', value: user.email ?? 'Not set' },
     { icon: <Phone className="size-4" aria-hidden="true" />, label: 'Phone', value: user.phone ?? 'Not set' },
-    {
-      icon: <MessageCircle className="size-4" aria-hidden="true" />,
-      label: 'Contact',
-      value: user.contact?.phoneNumber ?? 'Not set',
-    },
     {
       icon: <Send className="size-4" aria-hidden="true" />,
       label: 'Viber',

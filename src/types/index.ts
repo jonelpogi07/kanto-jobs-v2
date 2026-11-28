@@ -102,7 +102,6 @@ export interface UserDTO extends UserSummaryDTO {
   profileImage?: string | null
   bio: string
   skills: string[]
-  contact?: ContactInfoDTO | null
   viberNumber?: string | null
   messengerUsername?: string | null
   merchantId?: number | null
